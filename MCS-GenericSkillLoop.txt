@@ -1,0 +1,17 @@
+initEvents
+ 
+Set %EventArg0 13
+Set %EventArg1 1
+Set %OrigTargetID #LTargetID
+Set %SkillCooldown 10s
+ 
+Mainloop:
+    gosub RepeatSkill
+    wait %SkillCooldown
+ 
+Sub RepeatSkill
+    Set #LTargetID %OrigTargetID
+    Event Macro %EventArg0 %EventArg1
+    Event Macro 25 0
+    Event Macro 22 0
+    return
