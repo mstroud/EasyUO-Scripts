@@ -1,0 +1,28 @@
+initEvents
+
+Set %trigger #True
+Set %TargetID JOGG
+Set #LTargetID %TargetID
+
+While %trigger <> 0
+{
+   gosub Provocation
+   Wait 1s
+   gosub sysMsg
+}
+
+Sub Provocation
+   Event Macro 13 22
+   Wait 5
+   Event Macro 22 0
+   Wait 5
+   Event Macro 23 0
+   Wait 5
+   return
+
+Sub SysMsg
+   If Your_music_succeeds,_as_you_start_a_fight. in #sysMsg
+       wait 9s
+   Else
+       Wait 4s
+   return

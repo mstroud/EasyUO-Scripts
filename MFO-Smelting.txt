@@ -1,0 +1,51 @@
+initEvents
+ 
+Set %Ore TVJ_TWF_DWJ_GWJ
+Set %Ingot ENK
+Set %Forge JBG
+Set %OreBag MHYZLMD
+Set %IngotBag KHYZLMD
+ 
+Mainloop:
+    gosub MoveOre
+    gosub SmeltOre
+    gosub MoveIngot
+ 
+Sub MoveOre
+    FindItem %Ore C_ , %OreBag
+    ExEvent Drag #FindID 2
+    Wait 10
+    ExEvent DropC #BackpackID
+    Wait 10
+    Return
+   
+Sub SmeltOre
+    FindItem %Ore C_ , #BackpackID
+    Set #LObjectID #FindID
+    Event Macro 17 0
+    Wait 10
+    FindItem %Forge G
+    Set #LTargetID #FindID
+    Wait 10
+    Event Macro 22 0
+    Wait 10
+ 
+    FindItem %Ore C_ , #BackpackID
+    If #FindKind 0
+    {
+        ExEvent Drag #FindID #FindStack
+        Wait 10
+        ExEvent DropC %OreBag
+        Wait 10
+        Return
+    }
+    Else
+        Return
+   
+Sub MoveIngot
+    FindItem %Ingot C_ , #BackpackID
+    ExEvent Drag #FindID #Findstack
+    Wait 10
+    ExEvent DropC %IngotBag
+    Wait 10
+    Return
