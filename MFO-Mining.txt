@@ -1,20 +1,21 @@
 initEvents
  
-Set %MiningTool QPF
+Set %trigger #True
+ 
+Set %MiningTool QPF_TWF
 Set %Ore TVJ_TWF_DWJ_GWJ
 Set %OreBag MHYZLMD
  
-Mainloop:
-    gosub MiningToolInit
+While %trigger <> 0
+{
+    gosub MiningToolCheck
     gosub MineCircle
-    gosub MoveOre
+}
  
-Sub MiningToolInit
+Sub MiningToolCheck
     FindItem %MiningTool C
     Set #LObjectID #FindID
-    Set #LTargetID YC
-    Set #LTargetTile 1339
-   
+ 
     If #FindKind -1
     {
         Display You have run out of mining tools, script halting.
@@ -23,21 +24,16 @@ Sub MiningToolInit
     Return
  
 Sub MineCircle
-    for %x -1 1
+    for %y 0 2
     {
-        For %y -1 1
+        For %x 0 2
         {
+            Set %DigX %x * 35 + 365
+            Set %DigY %y * 30 + 270
             Event Macro 17 0
-            Set #LTargetX %x + #CharPosX
-            Set #LTargetY %y + #CharPosY
             Target
-            Event Macro 22 0
+            Click %DigX %DigY
             Wait 15
         }
     }
- 
-Sub MoveOre
-    FindItem %Ore C_ , #BackpackID
-    ExEvent Drag #FindID #FindStack
-    ExEvent DropC %OreBag
     Return
