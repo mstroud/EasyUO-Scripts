@@ -1,21 +1,40 @@
-initEvents
+initEvents ; Command needed to initialize events
  
-Set %trigger #True
+gosub Initialize
  
-Set %MiningTool QPF_TWF
-Set %Ore TVJ_TWF_DWJ_GWJ
-Set %OreBag MHYZLMD
- 
-While %trigger <> 0
+While %trigger <> 0 ; Main loop
 {
-    gosub MiningToolCheck
     gosub MineCircle
+    gosub StackOre
 }
  
-Sub MiningToolCheck
+Sub Initialize
+    Set %trigger #True ; Main loop trigger
+ 
+    Set %MiningTool QPF_TWF ; Mining tools (i.e., pickaxe or shovel) *Type
+    Set %ToolBag GDWGMMD ; Bag to store mining tools *ID
+    Set %Ore TVJ_TWF_DWJ_EWJ_GWJ ; Object types for raw ore *Type
+    Set %OreBag MHYZLMD ; Bag to move ore to *ID
+    Set %FindCnt 1
+ 
+    While #FindCnt <> 0
+    {
+        For #FindIndex in #FindCnt
+        {
+            FindItem %MiningTool C_ , #BackpackID ; Find mining tools in main backpack
+            ExEvent Drag #FindID 1 ; Pick up mining tools
+            Wait 5
+            ExEvent DropC %ToolBag ; Drop tools in specified container
+            Wait 5
+        }
+    }
+    gosub MiningToolCheck
+    Return
+ 
+Sub MiningToolCheck ; Mining tool interrupt
     FindItem %MiningTool C
     Set #LObjectID #FindID
- 
+   
     If #FindKind -1
     {
         Display You have run out of mining tools, script halting.
@@ -24,16 +43,77 @@ Sub MiningToolCheck
     Return
  
 Sub MineCircle
-    for %y 0 2
+    for %y 0 2 ; y-axis
     {
-        For %x 0 2
+        For %x 0 2 ; x-axis
         {
-            Set %DigX %x * 35 + 365
-            Set %DigY %y * 30 + 270
-            Event Macro 17 0
-            Target
-            Click %DigX %DigY
-            Wait 15
+            Set %MineTrigger #True
+            While %MineTrigger <> #False
+            {
+                If You_have_worn_out_your_tool! in #SysMsg
+                    gosub MiningToolCheck
+                Set %DigX %x * 35 + 365 ; Delta + Quadrant 1 screen coords (Top left of player)
+                Set %DigY %y * 30 + 270
+                Event Macro 17 0 ; LastObject
+                Target
+                Click %DigX %DigY
+                Wait 15
+                If There_is_no_metal_here in #sysMsg || You_can't_mine_that. in #sysMsg || That_is_too_far_away. in #sysMsg
+                    Set %MineTrigger #False
+            }
         }
     }
     Return
+ 
+Sub StackOre
+    FindItem %Ore C_ , #BackpackID
+    While #FindKind <> -1
+    {
+        FindItem %Ore C_ , #BackpackID
+        If #FindCol = 0
+        {
+            Set %DropX #CharPosX
+            Set %DropY 3 + #CharPosY
+        }
+        If #FindCol = 2419
+        {
+            Set %DropX 2 + #CharPosX
+            Set %DropY 2 + #CharPosY
+        }
+        If #FindCol = 2406
+        {
+            Set %DropX -2 + #CharPosX
+            Set %DropY 2 + #CharPosY
+        }
+        ExEvent Drag #FindID #FindStack
+        Wait 10
+        ExEvent DropG %DropX %DropY
+        Wait 10
+    }
+ 
+    FindItem %Ore G_1
+    While #FindKind <> -1
+    {
+        FindItem %Ore G_1
+        If #FindCol = 0
+        {
+            Set %DropX #CharPosX
+            Set %DropY 3 + #CharPosY
+        }
+        If #FindCol = 2419
+        {
+            Set %DropX 2 + #CharPosX
+            Set %DropY 2 + #CharPosY
+        }
+        If #FindCol = 2406
+        {
+            Set %DropX -2 + #CharPosX
+            Set %DropY 2 + #CharPosY
+        }
+        ExEvent Drag #FindID #FindStack
+        Wait 10
+        ExEvent DropG %DropX %DropY
+        Wait 10
+    }
+    Display Node Exhausted
+    Halt
