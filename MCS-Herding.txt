@@ -1,0 +1,12 @@
+initEvents
+
+; Before running this macro, use your staff
+; on an animal and choose a throwaway location
+; to herd to.
+
+Event Macro 17            ; Use last object
+Target                    ; Wait for target
+Event Macro 22 0          ; Last target
+Target                    ; Wait for target
+Event Macro 23 0          ; Target self
+Wait 2s                   ; 2s herding cooldown
