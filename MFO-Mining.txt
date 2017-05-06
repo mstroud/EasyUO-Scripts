@@ -2,31 +2,39 @@ initEvents ; Command needed to initialize events
  
 gosub Initialize
  
-While %trigger <> 0 ; Main loop
-{
-    gosub MineCircle
-    gosub StackOre
-}
+gosub MineCircle
+gosub DumpOre
+gosub ConsolidateOre %IronCol
+gosub ConsolidateOre %DullCopperCol
+gosub ConsolidateOre %ShadowCol
+If %UsePackHorse = 1
+   gosub LoadHorse
+ 
+Display Node Exhausted & Ore Sorted!
+Halt
+ 
  
 Sub Initialize
-    Set %trigger #True ; Main loop trigger
- 
     Set %MiningTool QPF_TWF ; Mining tools (i.e., pickaxe or shovel) *Type
     Set %ToolBag GDWGMMD ; Bag to store mining tools *ID
+ 
     Set %Ore TVJ_TWF_DWJ_EWJ_GWJ ; Object types for raw ore *Type
-    Set %OreBag MHYZLMD ; Bag to move ore to *ID
+    Set %IronCol 0
+    Set %DullCopperCol 2419
+    Set %ShadowCol 2406
+ 
+    Set %UsePackHorse #False
+    Set %PackHorse LFAKMMD
+ 
     Set %FindCnt 1
  
     While #FindCnt <> 0
     {
-        For #FindIndex in #FindCnt
-        {
-            FindItem %MiningTool C_ , #BackpackID ; Find mining tools in main backpack
-            ExEvent Drag #FindID 1 ; Pick up mining tools
-            Wait 5
-            ExEvent DropC %ToolBag ; Drop tools in specified container
-            Wait 5
-        }
+        FindItem %MiningTool C_ , #BackpackID ; Find mining tools in main backpack
+        ExEvent Drag #FindID 1 ; Pick up mining tools
+        Wait 5
+        ExEvent DropC %ToolBag ; Drop tools in specified container
+        Wait 5
     }
     gosub MiningToolCheck
     Return
@@ -64,56 +72,107 @@ Sub MineCircle
         }
     }
     Return
+   
+Sub WeightCheck
+    Set %WeightTrigger #MaxWeight - 20
+    If #Weight > %WeightTrigger
+    {
+        Display Weight near limit, halting script.
+        Halt
+    }
+    Return
+   
+Sub DumpOre
+    FindItem %Ore G_3
+    For #FindIndex 1 #FindCnt
+    {
+        FindItem %Ore G_3
+        If #FindCol = %IronCol
+        {
+            Set %DropX #CharPosX
+            Set %DropY #CharPosY + 2
+        }
+        If #FindCol = %DullCopperCol
+        {
+            Set %DropX #CharPosX + 1
+            Set %DropY #CharPosY + 1
+        }
+        If #FindCol = %ShadowCol
+        {
+            Set %DropX #CharPosX + 2
+            Set %DropY #CharPosY
+        }
+        ExEvent Drag #FindID #FindStack
+        Wait 10
+        ExEvent DropG %DropX %DropY #CharPosZ
+        Wait 10
+    }
  
-Sub StackOre
     FindItem %Ore C_ , #BackpackID
-    While #FindKind <> -1
+    While #FindCnt <> 0
     {
         FindItem %Ore C_ , #BackpackID
-        If #FindCol = 0
+        If #FindCol = %IronCol
         {
             Set %DropX #CharPosX
-            Set %DropY 3 + #CharPosY
+            Set %DropY #CharPosY + 2
         }
-        If #FindCol = 2419
+        If #FindCol = %DullCopperCol
         {
-            Set %DropX 2 + #CharPosX
-            Set %DropY 2 + #CharPosY
+            Set %DropX #CharPosX + 1
+            Set %DropY #CharPosY + 1
         }
-        If #FindCol = 2406
+        If #FindCol = %ShadowCol
         {
-            Set %DropX -2 + #CharPosX
-            Set %DropY 2 + #CharPosY
+            Set %DropX #CharPosX + 2
+            Set %DropY #CharPosY
         }
         ExEvent Drag #FindID #FindStack
         Wait 10
-        ExEvent DropG %DropX %DropY
+        ExEvent DropG %DropX %DropY #CharPosZ
         Wait 10
+    }
+    If %UsePackHorse = 1
+        Event Macro 1 0 All Come
+    Return
+ 
+Sub ConsolidateOre
+    FindItem %Ore G_3
+    For #FindIndex 1 #FindCnt
+    {
+        If #FindCol = %1
+        {
+            Set #LTargetID #FindID
+            Set #LTargetKind 1
+        }
     }
  
-    FindItem %Ore G_1
-    While #FindKind <> -1
+    For #FindIndex 1 #FindCnt
+        {
+            If #FindCol = %1
+            {
+                If #FindID <> #LTargetID
+                {
+                    Set #LObjectID #FindID
+                    Event Macro 17 0
+                    Target
+                    Event Macro 22 0
+                    Wait 1s
+                }
+            }
+        }
+    }
+    Return
+   
+Sub LoadHorse
+    Wait 1s
+    FindItem %Ore G_3
+    For #FindIndex 1 #FindCnt
     {
-        FindItem %Ore G_1
-        If #FindCol = 0
-        {
-            Set %DropX #CharPosX
-            Set %DropY 3 + #CharPosY
-        }
-        If #FindCol = 2419
-        {
-            Set %DropX 2 + #CharPosX
-            Set %DropY 2 + #CharPosY
-        }
-        If #FindCol = 2406
-        {
-            Set %DropX -2 + #CharPosX
-            Set %DropY 2 + #CharPosY
-        }
         ExEvent Drag #FindID #FindStack
         Wait 10
-        ExEvent DropG %DropX %DropY
+        ExEvent DropC %PackHorse
         Wait 10
     }
-    Display Node Exhausted
-    Halt
+    Event Macro 1 0 All Stay
+    Return
