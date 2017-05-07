@@ -1,0 +1,163 @@
+initEvents
+ 
+gosub Initialize
+ 
+While %trigger <> #False
+{
+    gosub SmithToolCheck
+    gosub IngotCheck
+    ; gosub Cutlass
+    ; gosub ChainCoif
+    ; gosub ChainLeggings
+    ; gosub ChainTunic
+    gosub PlateGorget
+    gosub Smelt
+}
+ 
+Sub Initialize
+    Set %trigger #True
+ 
+    Set %Ingots ENK
+    Set %SmithTool FBG_TBG
+    Set %ToolBag MHYZLMD
+    Set %SmithedItems JPH_NSH
+ 
+    gosub MoveTools
+ 
+    Return
+ 
+Sub MoveTools
+    FindItem %SmithTool C
+    If #FindKind -1
+    {
+        Display You have no blacksmith tools, script halting.
+        Halt
+    }
+ 
+    While #FindCnt <> 0
+    {
+        For #FindIndex in #FindCnt
+        {
+            FindItem %SmithTool C_ , #BackpackID ; Find blacksmith tools in main backpack
+            ExEvent Drag #FindID 1 ; Pick up blacksmith tools
+            Wait 10
+            ExEvent DropC %ToolBag ; Drop tools in specified container
+            Wait 10
+        }
+    }
+    Return
+ 
+Sub SmithToolCheck ; Blacksmith tool interrupt
+    FindItem %SmithTool C
+    If #FindKind -1
+    {
+        Display You have no blacksmith tools, script halting.
+        Halt
+    }
+    Set #LObjectID #FindID
+    Return
+ 
+Sub IngotCheck
+    FindItem %Ingots C_ , #BackpackID
+    If #FindKind <> -1
+    {
+        For #FindIndex 1 #FindCnt
+        {
+            If #FindCol = 0
+            {
+                Set #LTargetID #FindID
+                Set #LTargetKind 1
+                Return
+            }
+        }
+    }
+    If #FindStack < 10 || #FindKind = -1
+    {
+        Display Not enough ingots, script halting.
+        Halt
+    }
+    Return
+ 
+Sub ChainCoif
+    Event Macro 17 0
+    Wait 1s
+    Click 200 65 d
+    Target
+    Event Macro 22 0
+    Wait 1s
+    Click 115 65 d
+    Wait 1s
+    Click 65 65 d
+    Wait 6s
+    Return
+ 
+Sub ChainLeggings
+    Event Macro 17 0
+    Wait 1s
+    Click 200 65 d
+    Target
+    Event Macro 22 0
+    Wait 1s
+    Click 115 65 d
+    Wait 1s
+    Click 105 65 d
+    Wait 6s
+    Return
+ 
+Sub ChainTunic
+    Event Macro 17 0
+    Wait 1s
+    Click 200 65 d
+    Target
+    Event Macro 22 0
+    Wait 1s
+    Click 115 65 d
+    Wait 1s
+    Click 155 65 d
+    Wait 6s
+    Return
+ 
+Sub Cutlass
+    Event Macro 17 0
+    Wait 1s
+    Click 240 65 d
+    Target
+    Event Macro 22 0
+    Wait 1s
+    Click 65 65 d
+    Wait 1s
+    Click 85 65 d
+    Wait 6s
+    Return
+ 
+Sub PlateGorget
+    Event Macro 17 0
+    Wait 1s
+    Click 200 65 d
+    Target
+    Event Macro 22 0
+    Wait 1s
+    Click 165 65 d
+    Wait 1s
+    Click 105 65 d
+    Wait 6s
+    Return
+ 
+Sub Smelt
+    FindItem %SmithedItems C_ , #BackpackID
+    While #FindCnt <> 0
+    {
+        For #FindIndex 1 #FindCnt
+        {
+            FindItem %SmithedItems
+            Set #LTargetID #FindID
+            Set #LTargetKind 1
+            Event Macro 17 0
+            Wait 1s
+            Click 105 65 d
+            Target
+            Event Macro 22 0
+            Wait 5
+        }
+    }
+    Return

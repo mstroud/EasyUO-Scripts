@@ -3,14 +3,14 @@ initEvents ; Command needed to initialize events
 gosub Initialize
  
 gosub MineCircle
+gosub WeightCheck
 gosub DumpOre
 gosub ConsolidateOre %IronCol
 gosub ConsolidateOre %DullCopperCol
 gosub ConsolidateOre %ShadowCol
-If %UsePackHorse = 1
+gosub ConsolidateOre %CopperCol
+If %UsePackHorse = #True
    gosub LoadHorse
- 
-Display Node Exhausted & Ore Sorted!
 Halt
  
  
@@ -22,19 +22,24 @@ Sub Initialize
     Set %IronCol 0
     Set %DullCopperCol 2419
     Set %ShadowCol 2406
+    Set %CopperCol 2413
+    Set %BronzeCol 2418
+    Set %GoldCol 2213
+    Set %AgapiteCol 2425
+    Set %VeriteCol 2207
+    Set %ValoriteCol 2219
  
-    Set %UsePackHorse #False
-    Set %PackHorse LFAKMMD
+    Set %UsePackHorse #True
+    Set %PackHorse ZGFMMMD
  
     Set %FindCnt 1
- 
     While #FindCnt <> 0
     {
         FindItem %MiningTool C_ , #BackpackID ; Find mining tools in main backpack
         ExEvent Drag #FindID 1 ; Pick up mining tools
-        Wait 5
+        Wait 10
         ExEvent DropC %ToolBag ; Drop tools in specified container
-        Wait 5
+        Wait 15
     }
     gosub MiningToolCheck
     Return
@@ -51,57 +56,44 @@ Sub MiningToolCheck ; Mining tool interrupt
     Return
  
 Sub MineCircle
-    for %y 0 2 ; y-axis
+    for %y -1 1 ; y-axis
     {
-        For %x 0 2 ; x-axis
+        For %x -1 1 ; x-axis
         {
+            Set #LTargetKind 2
+            Set #LTargetX #CharPosX + %x
+            Set #LTargetY #CharPosY + %y
+            Set #LTargetZ #CharPosZ
+ 
             Set %MineTrigger #True
             While %MineTrigger <> #False
             {
                 If You_have_worn_out_your_tool! in #SysMsg
                     gosub MiningToolCheck
-                Set %DigX %x * 35 + 365 ; Delta + Quadrant 1 screen coords (Top left of player)
-                Set %DigY %y * 30 + 270
+ 
                 Event Macro 17 0 ; LastObject
                 Target
-                Click %DigX %DigY
+                Event Macro 22 0 ; LastTarget
                 Wait 15
-                If There_is_no_metal_here in #sysMsg || You_can't_mine_that. in #sysMsg || That_is_too_far_away. in #sysMsg
+                If There_is_no_metal_here in #sysMsg || You_can't_mine_that in #sysMsg || That_is_too_far_away in #sysMsg || You_can't_mine_there in #sysMsg
                     Set %MineTrigger #False
             }
         }
     }
     Return
-   
+ 
 Sub WeightCheck
     Set %WeightTrigger #MaxWeight - 20
-    If #Weight > %WeightTrigger
-    {
-        Display Weight near limit, halting script.
+    If #Weight < %WeightTrigger
         Halt
-    }
     Return
    
 Sub DumpOre
     FindItem %Ore G_3
+    Set %DropX #CharPosX + 1
+    Set %DropY #CharPosY + 1
     For #FindIndex 1 #FindCnt
     {
-        FindItem %Ore G_3
-        If #FindCol = %IronCol
-        {
-            Set %DropX #CharPosX
-            Set %DropY #CharPosY + 2
-        }
-        If #FindCol = %DullCopperCol
-        {
-            Set %DropX #CharPosX + 1
-            Set %DropY #CharPosY + 1
-        }
-        If #FindCol = %ShadowCol
-        {
-            Set %DropX #CharPosX + 2
-            Set %DropY #CharPosY
-        }
         ExEvent Drag #FindID #FindStack
         Wait 10
         ExEvent DropG %DropX %DropY #CharPosZ
@@ -109,30 +101,14 @@ Sub DumpOre
     }
  
     FindItem %Ore C_ , #BackpackID
-    While #FindCnt <> 0
+    For #FindIndex 1 #FindCnt
     {
-        FindItem %Ore C_ , #BackpackID
-        If #FindCol = %IronCol
-        {
-            Set %DropX #CharPosX
-            Set %DropY #CharPosY + 2
-        }
-        If #FindCol = %DullCopperCol
-        {
-            Set %DropX #CharPosX + 1
-            Set %DropY #CharPosY + 1
-        }
-        If #FindCol = %ShadowCol
-        {
-            Set %DropX #CharPosX + 2
-            Set %DropY #CharPosY
-        }
         ExEvent Drag #FindID #FindStack
         Wait 10
         ExEvent DropG %DropX %DropY #CharPosZ
         Wait 10
     }
-    If %UsePackHorse = 1
+    If %UsePackHorse = #True
         Event Macro 1 0 All Come
     Return
  
