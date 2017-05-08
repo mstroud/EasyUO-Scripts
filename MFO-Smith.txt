@@ -328,6 +328,20 @@ Sub MakeLast
             Return
         }
     }
+    GoSub SmithToolCheck
+    If You_failed_to_create_the_item in #sysMsg
+        GoSub MakeLast
+    Return
+ 
+Sub SmithToolCheck
+    FindItem %SmithTool C ; Check All Open Containers for Blacksmith Tools
+    If #FindCnt = 0
+    {
+        Display You have no blacksmith tools, script halting.
+        Halt
+    }
+    FindItem %SmithTool C ; Find Blacksmith Tool in ToolBag
+    Set #LObjectID #FindID ; Set Blacksmith Tool as Last Object
     Return
  
 Sub Smelt
