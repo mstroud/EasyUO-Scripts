@@ -1,13 +1,13 @@
 initEvents
- 
+
 Set %trigger #True
 Set %SellPrefixItems 12
- 
+
 While %trigger <> 0
 {
     Event Macro 1 0 Vendor Sell
     Wait 1s
- 
+
     Click 340 200 x %SellPrefixItems ; Move scroll past inventory items
     Wait 5
     Click 220 95 d ; Top Row
