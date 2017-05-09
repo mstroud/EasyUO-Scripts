@@ -1,24 +1,21 @@
-initEvents ; Command needed to initialize events
- 
-gosub Initialize
- 
-gosub MineCircle
-gosub WeightCheck
-gosub DumpOre
-gosub ConsolidateOre %IronCol
-gosub ConsolidateOre %DullCopperCol
-gosub ConsolidateOre %ShadowCol
-gosub ConsolidateOre %CopperCol
-If %UsePackHorse = #True
-   gosub LoadHorse
+GoSub Initialize
+GoSub Smelt
+
+GoSub MiningToolInit
+GoSub MineCircle
 Halt
- 
- 
-Sub Initialize
-    Set %MiningTool QPF_TWF ; Mining tools (i.e., pickaxe or shovel) *Type
-    Set %ToolBag GDWGMMD ; Bag to store mining tools *ID
- 
-    Set %Ore TVJ_TWF_DWJ_EWJ_GWJ ; Object types for raw ore *Type
+
+Sub Initialize ; Initialize Global Variables and Starting Checks
+    Set %EvDelay 15 ; Event Delay
+    Set %MiningTool QPF_TWF ; Mining Tool Object Types
+    Set %ToolBag UYOYKMD ; Mining Tool Container ID
+
+    Set %Forge JBG ; Forge Object Type
+
+    Set %Ore TVJ_DWJ_EWJ_GWJ ; Ore Object Types
+    Set %Ingots ENK
+
+    ; Ore Color Values
     Set %IronCol 0
     Set %DullCopperCol 2419
     Set %ShadowCol 2406
@@ -28,35 +25,41 @@ Sub Initialize
     Set %AgapiteCol 2425
     Set %VeriteCol 2207
     Set %ValoriteCol 2219
- 
-    Set %UsePackHorse #True
-    Set %PackHorse ZGFMMMD
- 
-    Set %FindCnt 1
-    While #FindCnt <> 0
-    {
-        FindItem %MiningTool C_ , #BackpackID ; Find mining tools in main backpack
-        ExEvent Drag #FindID 1 ; Pick up mining tools
-        Wait 10
-        ExEvent DropC %ToolBag ; Drop tools in specified container
-        Wait 15
-    }
-    gosub MiningToolCheck
+
+    Set %UsePackHorse #True ; Set #True if You're Using a Pack Horse
+    Set %PackHorse ZGFMMMD ; Pack Horse Container ID
+
+    Set #LObjectID %ToolBag
+    Event Macro 17 0 ; Open Mining Tool Bag
+    Wait %EvDelay
     Return
- 
+
+Sub MiningToolInit
+    GoSub MiningToolCheck
+    FindItem %MiningTool C_ , #BackpackID ; Find Mining Tools in Main Backpack
+    Wait 5
+    For #FindIndex 1 #FindCnt
+    {
+        ExEvent Drag #FindID 1 ; Drag Mining Tool
+        Wait %EvDelay
+        ExEvent DropC %ToolBag 0 0; Drop Mining Tool in Mining Tool Bag
+        Wait %EvDelay
+    }
+    Return
+
 Sub MiningToolCheck ; Mining tool interrupt
-    FindItem %MiningTool C
-    Set #LObjectID #FindID
-   
-    If #FindKind -1
+    FindItem %MiningTool C ; Find Mining Tool in any Open Containers
+    Wait 5
+    If #FindCnt = 0
     {
         Display You have run out of mining tools, script halting.
         Halt
     }
+    Set #LObjectID #FindID ; Set Mining Tool as Last Object
     Return
- 
-Sub MineCircle
-    for %y -1 1 ; y-axis
+
+Sub MineCircle ; Mine Every Surrounding Tile
+    For %y -1 1 ; y-axis
     {
         For %x -1 1 ; x-axis
         {
@@ -64,56 +67,61 @@ Sub MineCircle
             Set #LTargetX #CharPosX + %x
             Set #LTargetY #CharPosY + %y
             Set #LTargetZ #CharPosZ
- 
+
             Set %MineTrigger #True
             While %MineTrigger <> #False
             {
                 If You_have_worn_out_your_tool! in #SysMsg
                     gosub MiningToolCheck
- 
+
                 Event Macro 17 0 ; LastObject
                 Target
                 Event Macro 22 0 ; LastTarget
-                Wait 15
+                Wait %EvDelay
                 If There_is_no_metal_here in #sysMsg || You_can't_mine_that in #sysMsg || That_is_too_far_away in #sysMsg || You_can't_mine_there in #sysMsg
                     Set %MineTrigger #False
             }
         }
     }
+    GoSub WeightCheck
     Return
- 
-Sub WeightCheck
-    Set %WeightTrigger #MaxWeight - 20
-    If #Weight < %WeightTrigger
-        Halt
-    Return
-   
-Sub DumpOre
-    FindItem %Ore G_3
-    Set %DropX #CharPosX + 1
-    Set %DropY #CharPosY + 1
-    For #FindIndex 1 #FindCnt
+
+Sub WeightCheck ; Check if Maximum Weight
+    If #Weight > #MaxWeight
     {
-        ExEvent Drag #FindID #FindStack
-        Wait 10
-        ExEvent DropG %DropX %DropY #CharPosZ
-        Wait 10
+        GoSub DumpOre
+        gosub ConsolidateOre %IronCol
+        gosub ConsolidateOre %DullCopperCol
+        gosub ConsolidateOre %ShadowCol
+        gosub ConsolidateOre %CopperCol
+        ;gosub ConsolidateOre %BronzeCol
+        ;gosub ConsolidateOre %GoldCol
+        ;gosub ConsolidateOre %AgapiteCol
+        ;gosub ConsolidateOre %VeriteCol
+        ;gosub ConsolidateOre %ValoriteCol
+        If %UsePackHorse = #True
+            GoSub LoadHorse
+        Return
     }
- 
+    Return
+    
+Sub DumpOre ; Dump All Ore From Backpack to Ground
     FindItem %Ore C_ , #BackpackID
+    Wait 5
     For #FindIndex 1 #FindCnt
     {
         ExEvent Drag #FindID #FindStack
-        Wait 10
-        ExEvent DropG %DropX %DropY #CharPosZ
-        Wait 10
+        Wait %EvDelay
+        ExEvent DropG #CharPosX #CharPosY #CharPosZ
+        Wait %EvDelay
     }
     If %UsePackHorse = #True
         Event Macro 1 0 All Come
     Return
- 
-Sub ConsolidateOre
-    FindItem %Ore G_3
+
+Sub ConsolidateOre ; Comsolidate Ore Stacks on Ground by Type
+    FindItem %Ore G_2
+    Wait 5
     For #FindIndex 1 #FindCnt
     {
         If #FindCol = %1
@@ -122,7 +130,6 @@ Sub ConsolidateOre
             Set #LTargetKind 1
         }
     }
- 
     For #FindIndex 1 #FindCnt
         {
             If #FindCol = %1
@@ -133,22 +140,155 @@ Sub ConsolidateOre
                     Event Macro 17 0
                     Target
                     Event Macro 22 0
-                    Wait 1s
+                    Wait %EvDelay
                 }
             }
         }
     }
     Return
-   
-Sub LoadHorse
-    Wait 1s
-    FindItem %Ore G_3
+    
+Sub LoadHorse ; Load Ore Stacks on Ground Into Pack Horse
+    FindItem %Ore G_2
+    Wait 5
     For #FindIndex 1 #FindCnt
     {
         ExEvent Drag #FindID #FindStack
-        Wait 10
+        Wait %EvDelay
         ExEvent DropC %PackHorse
-        Wait 10
+        Wait %EvDelay
     }
     Event Macro 1 0 All Stay
+    Return
+    
+Sub Smelt
+    FindItem %Forge G_2
+    If #FindCnt >= 1
+    {
+         Set #LObjectID %PackHorse
+         Event Macro 17 0
+         Wait %EvDelay
+         FindItem %Ore C_ , %PackHorse
+         Wait 5
+         For #FindIndex 1 #FindCnt
+         {
+             ExEvent Drag #FindID #FindStack
+             Wait %EvDelay
+             ExEvent DropG #CharPosX #CharPosY #CharPosZ
+             Wait %EvDelay
+         }
+        gosub ConsolidateOre %IronCol
+        gosub ConsolidateOre %DullCopperCol
+        gosub ConsolidateOre %ShadowCol
+        gosub ConsolidateOre %CopperCol
+        ;gosub ConsolidateOre %BronzeCol
+        ;gosub ConsolidateOre %GoldCol
+        ;gosub ConsolidateOre %AgapiteCol
+        ;gosub ConsolidateOre %VeriteCol
+        ;gosub ConsolidateOre %ValoriteCol
+
+         FindItem %Forge G_2
+         Set #LTargetID #FindID
+         Set #LTargetKind 1
+
+         Set %SmeltTrigger #True
+         While %SmeltTrigger = #True
+         {
+             FindItem %Ore G_2
+             For #FindIndex 1 #FindCnt
+             {
+                 If #FindCnt <> 0
+                 {
+                     If #FindStack = 1
+                     {
+                         ExEvent Drag #FindID #FindStack
+                         Wait 15
+                         ExEvent DropC %PackHorse 0 0
+                         Wait 15
+                     }
+                     Else
+                     {
+                         Set #LObjectID #FindID
+                         Event Macro 17 0
+                         Wait 10
+                         Event Macro 22 0
+                         Wait 10
+                     }
+                 }
+             }
+             GoSub OrganizeIngots
+             FindItem %Ore G_2
+             If #FindCnt = 0
+             {
+                 Event Macro 1 0 All Follow Me
+                 Halt
+             }
+         }
+    }
+    Return
+    
+Sub OrganizeIngots
+    Set %Row1 0
+    Set %Row2 75
+
+    Set %Col1 0
+    Set %Col2 40
+    Set %Col3 60
+    Set %Col4 80
+    Set %Col5 100
+
+    FindItem %Ingots C_ , #BackpackID
+    Wait 5
+    For #FindIndex 1 #FindCnt
+    {
+        If #FindCol = %IronCol
+        {
+            Set %IngotX %Col1
+            Set %IngotY %Row1
+        }
+        If #FindCol = %DullCopperCol
+        {
+            Set %IngotX %Col2
+            Set %IngotY %Row1
+        }
+        If #FindCol = %ShadowCol
+        {
+            Set %IngotX %Col3
+            Set %IngotY %Row1
+        }
+        If #FindCol = %CopperCol
+        {
+            Set %IngotX %Col4
+            Set %IngotY %Row1
+        }
+        If #FindCol = %BronzeCol
+        {
+            Set %IngotX %Col1
+            Set %IngotY %Row2
+        }
+        If #FindCol = %GoldCol
+        {
+            Set %IngotX %Col2
+            Set %IngotY %Row2
+        }
+        If #FindCol = %AgapiteCol
+        {
+            Set %IngotX %Col3
+            Set %IngotY %Row2
+        }
+        If #FindCol = %VeriteCol
+        {
+            Set %IngotX %Col4
+            Set %IngotY %Row2
+        }
+        If #FindCol = %ValoriteCol
+        {
+            Set %IngotX %Col5
+            Set %IngotY %Row2
+        }
+
+        ExEvent Drag #FindID #FindStack
+        Wait %EvDelay
+        ExEvent DropC %ToolBag %IngotX %IngotY
+        Wait %EvDelay
+    }
     Return
