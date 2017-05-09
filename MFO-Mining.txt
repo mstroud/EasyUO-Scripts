@@ -1,16 +1,32 @@
 GoSub Initialize
-GoSub Smelt
-
 GoSub MiningToolInit
-GoSub MineCircle
-Halt
+GoSub CreateMenu
+
+Mainloop:
+    If #menuButton = Mine
+    {
+        GoSub MineCircle
+        Set #menuButton
+
+    }
+    If #menuButton = Smelt
+    {
+        GoSub Smelt
+        Set #menuButton
+    }
+    If #menuButton = Quit
+    {
+        menu Hide
+        Halt
+    }
+    GoSub 8x8
+    Goto Mainloop
 
 Sub Initialize ; Initialize Global Variables and Starting Checks
     Set %EvDelay 15 ; Event Delay
     Set %MiningTool QPF_TWF ; Mining Tool Object Types
+    Set %MiningToolCount 0
     Set %ToolBag UYOYKMD ; Mining Tool Container ID
-
-    Set %Forge JBG ; Forge Object Type
 
     Set %Ore TVJ_DWJ_EWJ_GWJ ; Ore Object Types
     Set %Ingots ENK
@@ -47,39 +63,61 @@ Sub MiningToolInit
     }
     Return
 
+Sub CreateMenu
+    menu Window Size 190 70
+    menu Window Title Mining Assist Suite
+    menu Button Mine 10 10 50 25 Mine
+    menu Button Smelt 70 10 50 25 Smelt
+    menu Button Quit 130 10 50 25 Quit
+    menu Text MiningTools 10 45 Mining Tools: %MiningToolCount
+    menu edit xloc 125 40 15
+    menu edit yloc 150 40 15
+    menu Show
+    Return
+
 Sub MiningToolCheck ; Mining tool interrupt
     FindItem %MiningTool C ; Find Mining Tool in any Open Containers
     Wait 5
+    Set %MiningToolCount #FindCnt
     If #FindCnt = 0
     {
         Display You have run out of mining tools, script halting.
+        menu Hide
         Halt
     }
     Set #LObjectID #FindID ; Set Mining Tool as Last Object
+    menu Set MiningTools Mining Tools: %MiningToolCount
     Return
 
 Sub MineCircle ; Mine Every Surrounding Tile
+    GoSub MiningToolCheck
     For %y -1 1 ; y-axis
     {
         For %x -1 1 ; x-axis
         {
-            Set #LTargetKind 2
-            Set #LTargetX #CharPosX + %x
-            Set #LTargetY #CharPosY + %y
-            Set #LTargetZ #CharPosZ
-
-            Set %MineTrigger #True
-            While %MineTrigger <> #False
+            If %x <> 0
             {
-                If You_have_worn_out_your_tool! in #SysMsg
-                    gosub MiningToolCheck
+                If %y <> 0
+                {
+                    Set #LTargetKind 2
+                    Set #LTargetX #CharPosX + %x
+                    Set #LTargetY #CharPosY + %y
+                    Set #LTargetZ #CharPosZ
 
-                Event Macro 17 0 ; LastObject
-                Target
-                Event Macro 22 0 ; LastTarget
-                Wait %EvDelay
-                If There_is_no_metal_here in #sysMsg || You_can't_mine_that in #sysMsg || That_is_too_far_away in #sysMsg || You_can't_mine_there in #sysMsg
-                    Set %MineTrigger #False
+                    Set %MineTrigger #True
+                    While %MineTrigger <> #False
+                    {
+                        If You_have_worn_out_your_tool! in #SysMsg
+                            gosub MiningToolCheck
+
+                        Event Macro 17 0 ; LastObject
+                        Target
+                        Event Macro 22 0 ; LastTarget
+                        Wait %EvDelay
+                        If There_is_no_metal_here in #sysMsg || You_can't_mine_that in #sysMsg || That_is_too_far_away in #sysMsg || You_can't_mine_there in #sysMsg
+                            Set %MineTrigger #False
+                    }
+                }
             }
         }
     }
@@ -101,7 +139,6 @@ Sub WeightCheck ; Check if Maximum Weight
         ;gosub ConsolidateOre %ValoriteCol
         If %UsePackHorse = #True
             GoSub LoadHorse
-        Return
     }
     Return
     
@@ -161,6 +198,7 @@ Sub LoadHorse ; Load Ore Stacks on Ground Into Pack Horse
     Return
     
 Sub Smelt
+    Set %Forge JBG ; Forge Object Type
     FindItem %Forge G_2
     If #FindCnt >= 1
     {
@@ -220,9 +258,11 @@ Sub Smelt
              If #FindCnt = 0
              {
                  Event Macro 1 0 All Follow Me
-                 Halt
+                 Return
              }
          }
+         Else
+             Display There are no forges near you.
     }
     Return
     
@@ -291,4 +331,11 @@ Sub OrganizeIngots
         ExEvent DropC %ToolBag %IngotX %IngotY
         Wait %EvDelay
     }
+    Return
+    
+Sub 8x8
+    Set %x #CharPosX % 8
+    Set %y #CharPosY % 8
+    Menu Set XLoc %x
+    Menu Set YLoc %y
     Return
