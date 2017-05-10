@@ -96,8 +96,9 @@ sub AutoLoot
       ; Reagents
       GoSub LootItems %slow_delay %itid_regs
       ; Potions
-      GoSub LootItems %slow_delay TUF ; Explos before rest of the pots
-      GoSub LootItems %slow_delay ZUF_UUF_YUF_NUF_XUF
+     ;GoSub LootItems %slow_delay TUF ; Explos before rest of the pots
+     ;GoSub LootItems %slow_delay ZUF_UUF_YUF_NUF_XUF
+      GoSub LootItems %slow_delay %itid_pots
       ; Gold
       GoSub LootItems %fast_delay %itid_gold
     }
@@ -136,7 +137,6 @@ sub TargetCorpse
    ;If #TARGCURS = 1
    ;    goto targloop
     Target
-    WaitForTarget
 
     FindItem #LTARGETID G_2
     If #FINDCNT > 0 && #FINDTYPE in %itid_corpses
@@ -249,7 +249,6 @@ sub SetLootBag
    ;If #TARGCURS = 1
    ;    goto targloop
     Target
-    WaitForTarget
     
     ; Analyze and set users choice
     FindItem #LTARGETID C_ , #BACKPACKID
