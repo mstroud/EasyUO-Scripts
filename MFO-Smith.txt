@@ -1,28 +1,72 @@
-InitEvents ; Initialize Macro Events
- 
-GoSub Initialize ; Intialize Global Variables
-GoSub MoveTools ; Move All Smith Tools in Main Backpack
-GoSub IngotCheck ; Check for Ingots
-GoSub SelectIngot %IronCol ; Select Ingots
- 
+GoSub Initialize
+GoSub MiningToolInit
+GoSub CreateMenu
+
 Mainloop:
-    GoSub PrimeItem ; Select Crafted Item
-    Set %SkillTrigger #True
-    While %SkillTrigger #True
+    If #menuButton = Mine
     {
-        GoSub MakeLast
-        GoSub Smelt
+        GoSub MineCircle
+        Set #menuButton Nothing
+
     }
+    If #menuButton = Smelt
+    {
+        GoSub Smelt
+        Set #menuButton Nothing
+    }
+    If #menuButton = Quit
+    {
+        menu Hide
+        Halt
+    }
+    If #menuButton = Consolidate
+    {
+        GoSub DumpOre
+        gosub ConsolidateOre %IronCol
+        gosub ConsolidateOre %DullCopperCol
+        gosub ConsolidateOre %ShadowCol
+        gosub ConsolidateOre %CopperCol
+        ;gosub ConsolidateOre %BronzeCol
+        ;gosub ConsolidateOre %GoldCol
+        ;gosub ConsolidateOre %AgapiteCol
+        ;gosub ConsolidateOre %VeriteCol
+        ;gosub ConsolidateOre %ValoriteCol
+        If %UsePackHorse = #True
+            GoSub LoadHorse
+        Set #menuButton Nothing
+    }
+    If #menuButton = LoadHorse
+    {
+        GoSub LoadHorse
+        Set #menuButton Nothing
+    }
+    If #menuButton = Follow
+    {
+        Event Macro 1 0 All Follow Me
+        Set #menuButton Nothing
+    }
+    If #menuButton = Stay
+    {
+        Event Macro 1 0 All Stay
+        Set #menuButton Nothing
+    }
+    GoSub 8x8
     Goto Mainloop
- 
-Sub Initialize
-    Set %EvDelay 15
-    Set %Ingots ENK ; Ingot Object Type
-    Set %SmithTool FBG_TBG ; Blacksmith Tool Object Types
-    Set %ToolBag MHYZLMD ; Bag to Place Blacksmith Tools in
-    Set %SmithedItems YSF_DPH_SOH_ATF_VRH_NMH_XRH_MTF_ISH ; Crafted Items Object Types
-   
-    ; Ingot Colors
+
+Sub Initialize ; Initialize Global Variables and Starting Checks
+    Menu Window Size 320 115
+    Menu Window Title Mining Assist Suite_v1.1
+    Menu Text Init 10 85 Initializing...
+    Menu Show
+    Set %EvDelay 15 ; Event Delay
+    Set %MiningTool QPF_TWF ; Mining Tool Object Types
+    Set %MiningToolCount 0
+    Set %ToolBag UYOYKMD ; Mining Tool Container ID
+
+    Set %Ore TVJ_DWJ_EWJ_GWJ ; Ore Object Types
+    Set %Ingots ENK
+
+    ; Ore Color Values
     Set %IronCol 0
     Set %DullCopperCol 2419
     Set %ShadowCol 2406
@@ -32,330 +76,312 @@ Sub Initialize
     Set %AgapiteCol 2425
     Set %VeriteCol 2207
     Set %ValoriteCol 2219
-   
-    Set %SmithLevel1 YSF ; Mace
-    Set %SmithLevel2 DPH ; Chain Coif
-    Set %SmithLevel3 SOH ; Broadsword
-    Set %SmithLevel4 ATF ; Scimitar
-    Set %SmithLevel5 VRH ; Kryss
-    Set %SmithLevel6 NMH ; Katana
-    Set %SmithLevel7 XRH ; Short Spear
-    Set %SmithLevel8 MTF ; Spear
-    Set %SmithLevel9 ISH ; Plate Gloves
- 
+
+    Set %UsePackHorse #True ; Set #True if You're Using a Pack Horse
+    Set %PackHorse ZGFMMMD ; Pack Horse Container ID
+
+    Set #LObjectID #BackpackID
+    Event Macro 17 0 ; Open Main Backpack
+    Wait %EvDelay
+
+    Set #LObjectID %ToolBag
+    Event Macro 17 0 ; Open Mining Tool Bag
+    Wait %EvDelay
     Return
-   
-Sub MoveTools
-    FindItem %SmithTool C ; Check All Open Containers for Blacksmith Tools
-    If #FindCnt = 0
-    {
-        Display You have no blacksmith tools, script halting.
-        Halt
-    }
- 
-    FindItem %SmithTool C_ , #BackpackID ; Check Main Backpack for Blacksmith Tools
-    If #FindCnt > 0
-    {
-        For #FindIndex 1 #FindCnt
-        {
-            ExEvent Drag #FindID 1 ; Pick Up Blacksmith Tool
-            Wait %EvDelay
-            ExEvent DropC %ToolBag ; Drop Blacksmith Tool in ToolBag
-            Wait %EvDelay
-        }
-    }
-    FindItem %SmithTool C ; Find Blacksmith Tool in ToolBag
-    Set #LObjectID #FindID ; Set Blacksmith Tool as Last Object
-    Return
-   
-Sub IngotCheck
-    FindItem %Ingots C_ , #BackpackID
+
+Sub MiningToolInit
+    GoSub MiningToolCheck
+    FindItem %MiningTool C_ , #BackpackID ; Find Mining Tools in Main Backpack
+    Wait 5
     For #FindIndex 1 #FindCnt
-        If #FindCol = %IronCol && #FindStack > 10
-            Return
- 
-    Display Not enough ingots, script halting.
-    Halt
- 
-Sub SelectIngot
-    Event Macro 17 0 ; Last Object
-    Click 70 410 ; Click Ingot Menu
-    Wait %EvDelay
-    If %1 = %IronCol
-        Click 270 110 ; Select Iron Ingots
-    Wait %EvDelay
-    Click 70 450 ; Close Crafting Menu
+    {
+        ExEvent Drag #FindID 1 ; Drag Mining Tool
+        Wait %EvDelay
+        ExEvent DropC %ToolBag 0 0; Drop Mining Tool in Mining Tool Bag
+        Wait %EvDelay
+    }
     Return
- 
-Sub PrimeItem
-    GoSub SkillCheck blac
-    If #Skill < 550 ; Mace
-    {
-        Event Macro 17 0
-        Wait %EvDelay
-        Click
-        Wait %EvDelay
-        Click
-        Set %CraftedItem YSF
-        Wait 6s
-        %SkillTrigger #True
-        Return %CraftedItem
-    }
-    If #Skill >= 550 ; Chain Coif
-    {
-        If #Skill < 650
-        {
-            Event Macro 17 0
-            Wait %EvDelay
-            Click 70 150
-            Wait %EvDelay
-            Click 270 11
-            Set %CraftedItem DPH
-            Wait 6s
-            %SkillTrigger #True
-            Return %CraftedItem
-        }
-    }
-    If #Skill >= 650 ; Scimitar
-    {
-        If #Skill < 700
-        {
-            Event Macro 17 0
-            Wait %EvDelay
-            Click 70 230
-            Wait %EvDelay
-            Click 270 190
-            Set %CraftedItem SOH
-            Wait 6s
-            %SkillTrigger #True
-            Return %CraftedItem
-        }
-    }
-    If #Skill >= 700 ; Broadsword
-    {
-        If #Skill < 720
-        {
-        Event Macro 17 0
-        Wait %EvDelay
-        Click 70 230
-        Wait %EvDelay
-        Click 270 210
-        Set %CraftedItem ATF
-        Wait 6s
-        %SkillTrigger #True
-        Return %CraftedItem
-    }
-    If #Skill >= 720 ; Kryss
-    {
-        If #Skill < 810
-        {
-            Event Macro 17 0
-            Wait %EvDelay
-            Click 70 230
-            Wait %EvDelay
-            Click 270 230
-            Set %CraftedItem VRH
-            Wait 6s
-            Return %CraftedItem
-        }
-    }
-    If #Skill >= 810 ; Katana
-    {
-        If #Skill < 830
-        {
-            Event Macro 17 0
-            Wait %EvDelay
-            Click 70 230
-            Wait %EvDelay
-            Click 270 250
-            Set %CraftedItem NMH
-            Wait 6s
-            %SkillTrigger #True
-            Return %CraftedItem
-        }
-    }
-    If #Skill >= 830 ; Short Spear
-    {
-        If #Skill < 930
-        {
-            Event Macro 17 0
-            Wait %EvDelay
-            Click 70 270
-            Wait %EvDelay
-            Click 270 170
-            Set %CraftedItem XRH
-            Wait 6s
-            %SkillTrigger #True
-            Return %CraftedItem
-        }
-    }
-    If #Skill >= 930 && #Skill < 980 ; Spear
-    {
-        If #Skill < 980
-        {
-            Event Macro 17 0
-            Wait %EvDelay
-            Click 70 230
-            Wait %EvDelay
-            Click 270 190
-            Set %CraftedItem MTF
-            Wait 6s
-            %SkillTrigger #True
-            Return %CraftedItem
-        }
-    }
-    If #Skill >= 980 ; Plate Gloves
-    {
-        Event Macro 17 0
-        Wait %EvDelay
-        Click 70 170
-        Wait %EvDelay
-        Click 270 150
-        Set %CraftedItem ISH
-        Wait 6s
-        Set %SkillTrigger #True
-        Return %CraftedItem
-    }
-   
-Sub SkillCheck
-    chooseSkill %1 ; Select Blacksmith Skill
-    Return #Skill ; Return Skill Level (Display Level * 100)
-   
-Sub MakeLast
-    Event Macro 17 0
-    Wait %EvDelay
-    Click 320 450
-    Wait 6s
-    GoSub SkillCheck blac
-    If #Skill < 550
-    {
-        If %CraftedItem <> %SmithLevel1 ; Mace
-        {
-            Set %SkillTrigger #False
-            Return
-        }
-    }
- 
-    If #Skill >= 550
-    {
-        If #Skill < 650 ; Chain Coif
-        {
-            If %CraftedItem <> %SmithLevel2
-            {
-                Set %SkillTrigger #False
-                Return
-            }
-        }
-    }
- 
-    If #Skill >= 650 ; Scimitar
-    {
-        If #Skill < 700
-        {
-            If %CraftedItem <> %SmithLevel3
-            {
-                Set %SkillTrigger #False
-                Return
-            }
-        }
-    }
-   
-    If #Skill >= 700 ; Broadsword
-    {
-        If #Skill < 720
-        {
-            If %CraftedItem <> %SmithLevel4
-            {
-                Set %SkillTrigger #False
-                Return
-            }
-        }
-    }
-   
-    If #Skill >= 720 ; Kryss
-    {
-        If #Skill < 810
-        {
-            If %CraftedItem <> %SmithLevel5
-            {
-                Set %SkillTrigger #False
-                Return
-            }
-        }
-    }
-   
-    If #Skill >= 810 ; Katana
-    {
-        If #Skill < 830
-        {
-            If %CraftedItem <> %SmithLevel6
-            {
-                Set %SkillTrigger #False
-                Return
-            }
-        }
-    }
-   
-    If #Skill >= 830 ; Short Spear
-    {
-        If #Skill < 930
-        {
-            If %CraftedItem <> %SmithLevel7
-            {
-                Set %SkillTrigger #False
-                Return
-            }
-        }
-    }
-   
-    If #Skill >= 930 ; Spear
-    {
-        If #Skill < 980
-        {
-            If %CraftedItem <> %SmithLevel8
-            {
-                Set %SkillTrigger #False
-                Return
-            }
-        }
-    }
-   
-    If #Skill >= 980 ; Plate Gloves50
-    {
-        If %CraftedItem <> %SmithLevel9
-        {
-            Set %SkillTrigger #False
-            Return
-        }
-    }
-    GoSub SmithToolCheck
-    If You_failed_to_create_the_item in #sysMsg
-        GoSub MakeLast
+
+Sub CreateMenu
+    Menu Clear
+    Menu Font Align Center
+    Menu Window Title Mining Assist Suite_v1.1
+    Menu Button Mine 10 10 50 25 Mine
+    Menu Button Smelt 70 10 50 25 Smelt
+    Menu Button Consolidate 130 10 85 25 Consolidate
+    Menu Button LoadHorse 225 10 85 25 Load Horse
+    Menu Button Quit 260 80 50 25 Quit
+    Menu Button Follow 10 40 145 35 Follow
+    Menu Button Stay 165 40 145 35 Stay
+    Menu Text MiningTools 10 85 Mining Tools: %MiningToolCount
+    Menu Text XLabel 145 85 X:
+    Menu Edit XLoc 160 80 20
+    Menu Text YLabel 190 85 Y:
+    Menu Edit YLoc 205 80 20
+    Menu Show
     Return
- 
-Sub SmithToolCheck
-    FindItem %SmithTool C ; Check All Open Containers for Blacksmith Tools
+
+Sub MiningToolCheck ; Mining tool interrupt
+    FindItem %MiningTool C ; Find Mining Tool in any Open Containers
+    Wait 5
+    Set %MiningToolCount #FindCnt
     If #FindCnt = 0
     {
-        Display You have no blacksmith tools, script halting.
+        Display You have run out of mining tools, script halting.
+        menu Hide
         Halt
     }
-    FindItem %SmithTool C ; Find Blacksmith Tool in ToolBag
-    Set #LObjectID #FindID ; Set Blacksmith Tool as Last Object
+    Set #LObjectID #FindID ; Set Mining Tool as Last Object
+    menu Set MiningTools Mining Tools: %MiningToolCount
     Return
- 
+
+Sub MineCircle ; Mine Every Surrounding Tile
+    GoSub MiningToolCheck
+    For %y -1 1 ; y-axis
+    {
+        For %x -1 1 ; x-axis
+        {
+            If %x <> 0
+            {
+                If %y <> 0
+                {
+                    Set #LTargetKind 2
+                    Set #LTargetX #CharPosX + %x
+                    Set #LTargetY #CharPosY + %y
+                    Set #LTargetZ #CharPosZ
+
+                    Set %MineTrigger #True
+                    While %MineTrigger <> #False
+                    {
+                        If You_have_worn_out_your_tool! in #SysMsg
+                            gosub MiningToolCheck
+
+                        Event Macro 17 0 ; LastObject
+                        Target
+                        Event Macro 22 0 ; LastTarget
+                        Wait %EvDelay
+                        If There_is_no_metal_here in #sysMsg || You_can't_mine_that in #sysMsg || That_is_too_far_away in #sysMsg || You_can't_mine_there in #sysMsg
+                            Set %MineTrigger #False
+                    }
+                }
+            }
+        }
+    }
+    GoSub WeightCheck
+    Return
+
+Sub WeightCheck ; Check if Maximum Weight
+    If #Weight > #MaxWeight
+    {
+        GoSub DumpOre
+        gosub ConsolidateOre %IronCol
+        gosub ConsolidateOre %DullCopperCol
+        gosub ConsolidateOre %ShadowCol
+        gosub ConsolidateOre %CopperCol
+        ;gosub ConsolidateOre %BronzeCol
+        ;gosub ConsolidateOre %GoldCol
+        ;gosub ConsolidateOre %AgapiteCol
+        ;gosub ConsolidateOre %VeriteCol
+        ;gosub ConsolidateOre %ValoriteCol
+        If %UsePackHorse = #True
+            GoSub LoadHorse
+    }
+    Return
+    
+Sub DumpOre ; Dump All Ore From Open Packs
+    FindItem %Ore C
+    Wait 5
+    For #FindIndex 1 #FindCnt
+    {
+        ExEvent Drag #FindID #FindStack
+        Wait %EvDelay
+        ExEvent DropG #CharPosX #CharPosY #CharPosZ
+        Wait %EvDelay
+    }
+    If %UsePackHorse = #True
+        Event Macro 1 0 All Come
+    Return
+
+Sub ConsolidateOre ; Comsolidate Ore Stacks on Ground by Type
+    FindItem %Ore G_2
+    Wait 5
+    For #FindIndex 1 #FindCnt
+    {
+        If #FindCol = %1
+        {
+            Set #LTargetID #FindID
+            Set #LTargetKind 1
+        }
+    }
+    For #FindIndex 1 #FindCnt
+        {
+            If #FindCol = %1
+            {
+                If #FindID <> #LTargetID
+                {
+                    Set #LObjectID #FindID
+                    Event Macro 17 0
+                    Target
+                    Event Macro 22 0
+                    Wait %EvDelay
+                }
+            }
+        }
+    }
+    Return
+    
+Sub LoadHorse ; Load Ore Stacks on Ground Into Pack Horse
+    FindItem %Ore G_2
+    Wait 5
+    For #FindIndex 1 #FindCnt
+    {
+        ExEvent Drag #FindID #FindStack
+        Wait %EvDelay
+        ExEvent DropC %PackHorse
+        Wait %EvDelay
+    }
+    Event Macro 1 0 All Stay
+    Return
+    
 Sub Smelt
-    FindItem %SmithedItems C_ , #BackpackID
-    If #FindCnt = 0
-       Return
+    Set %Forge JBG ; Forge Object Type
+    FindItem %Forge G_2
+    If #FindCnt >= 1
+    {
+         Set #LObjectID %PackHorse
+         Event Macro 17 0
+         Wait %EvDelay
+         FindItem %Ore C_ , %PackHorse
+         Wait 5
+         For #FindIndex 1 #FindCnt
+         {
+             ExEvent Drag #FindID #FindStack
+             Wait %EvDelay
+             ExEvent DropG #CharPosX #CharPosY #CharPosZ
+             Wait %EvDelay
+         }
+        gosub ConsolidateOre %IronCol
+        gosub ConsolidateOre %DullCopperCol
+        gosub ConsolidateOre %ShadowCol
+        gosub ConsolidateOre %CopperCol
+        ;gosub ConsolidateOre %BronzeCol
+        ;gosub ConsolidateOre %GoldCol
+        ;gosub ConsolidateOre %AgapiteCol
+        ;gosub ConsolidateOre %VeriteCol
+        ;gosub ConsolidateOre %ValoriteCol
+
+         FindItem %Forge G_2
+         Set #LTargetID #FindID
+         Set #LTargetKind 1
+
+         Set %SmeltTrigger #True
+         While %SmeltTrigger = #True
+         {
+             FindItem %Ore G_2
+             For #FindIndex 1 #FindCnt
+             {
+                 If #FindCnt <> 0
+                 {
+                     If #FindStack = 1
+                     {
+                         ExEvent Drag #FindID #FindStack
+                         Wait 15
+                         ExEvent DropC %PackHorse 0 0
+                         Wait 15
+                     }
+                     Else
+                     {
+                         Set #LObjectID #FindID
+                         Event Macro 17 0
+                         Wait 10
+                         Event Macro 22 0
+                         Wait 10
+                     }
+                 }
+             }
+             GoSub OrganizeIngots
+             FindItem %Ore G_2
+             If #FindCnt = 0
+             {
+                 Event Macro 1 0 All Follow Me
+                 Return
+             }
+         }
+         Else
+             Display There are no forges near you.
+    }
+    Return
+    
+Sub OrganizeIngots
+    Set %Row1 0
+    Set %Row2 75
+
+    Set %Col1 0
+    Set %Col2 40
+    Set %Col3 60
+    Set %Col4 80
+    Set %Col5 100
+
+    FindItem %Ingots C_ , #BackpackID
+    Wait 5
     For #FindIndex 1 #FindCnt
     {
-        Set #LTargetID #FindID
-        Set #LTargetKind 1
-        Event Macro 17 0
+        If #FindCol = %IronCol
+        {
+            Set %IngotX %Col1
+            Set %IngotY %Row1
+        }
+        If #FindCol = %DullCopperCol
+        {
+            Set %IngotX %Col2
+            Set %IngotY %Row1
+        }
+        If #FindCol = %ShadowCol
+        {
+            Set %IngotX %Col3
+            Set %IngotY %Row1
+        }
+        If #FindCol = %CopperCol
+        {
+            Set %IngotX %Col4
+            Set %IngotY %Row1
+        }
+        If #FindCol = %BronzeCol
+        {
+            Set %IngotX %Col1
+            Set %IngotY %Row2
+        }
+        If #FindCol = %GoldCol
+        {
+            Set %IngotX %Col2
+            Set %IngotY %Row2
+        }
+        If #FindCol = %AgapiteCol
+        {
+            Set %IngotX %Col3
+            Set %IngotY %Row2
+        }
+        If #FindCol = %VeriteCol
+        {
+            Set %IngotX %Col4
+            Set %IngotY %Row2
+        }
+        If #FindCol = %ValoriteCol
+        {
+            Set %IngotX %Col5
+            Set %IngotY %Row2
+        }
+
+        ExEvent Drag #FindID #FindStack
         Wait %EvDelay
-        Click 70 390
-        Target
-        Event Macro 22 0
+        ExEvent DropC %ToolBag %IngotX %IngotY
+        Wait %EvDelay
     }
+    Return
+    
+Sub 8x8
+    Set %x #CharPosX % 8
+    Set %y #CharPosY % 8
+    Menu Set XLoc %x
+    Menu Set YLoc %y
     Return
