@@ -40,6 +40,11 @@ Mainloop:
         GoSub LoadHorse
         Set #menuButton Nothing
     }
+    If #menuButton = MineMinoc
+    {
+        GoSub MineMinoc
+        Set #menuButton Nothing
+    }
     If #menuButton = Follow
     {
         Event Macro 1 0 All Follow Me
@@ -54,8 +59,8 @@ Mainloop:
     Goto Mainloop
 
 Sub Initialize ; Initialize Global Variables and Starting Checks
-    Menu Window Size 320 115
-    Menu Window Title Mining Assist Suite_v1.1
+    Menu Window Size 320 150
+    Menu Window Title [YO] Mining Suite_v1.2
     Menu Text Init 10 85 Initializing...
     Menu Show
     Set %EvDelay 15 ; Event Delay
@@ -110,14 +115,15 @@ Sub CreateMenu
     Menu Button Smelt 70 10 50 25 Smelt
     Menu Button Consolidate 130 10 85 25 Consolidate
     Menu Button LoadHorse 225 10 85 25 Load Horse
-    Menu Button Quit 260 80 50 25 Quit
-    Menu Button Follow 10 40 145 35 Follow
-    Menu Button Stay 165 40 145 35 Stay
-    Menu Text MiningTools 10 85 Mining Tools: %MiningToolCount
-    Menu Text XLabel 145 85 X:
-    Menu Edit XLoc 160 80 20
-    Menu Text YLabel 190 85 Y:
-    Menu Edit YLoc 205 80 20
+    Menu Button MineMinoc 10 40 300 25 Mine Minoc
+    Menu Button Follow 10 70 145 35 Follow
+    Menu Button Stay 165 70 145 35 Stay
+    Menu Text MiningTools 10 115 Mining Tools: %MiningToolCount
+    Menu Text XLabel 145 115 X:
+    Menu Edit XLoc 160 110 20
+    Menu Text YLabel 190 115 Y:
+    Menu Edit YLoc 205 110 20
+    Menu Button Quit 260 110 50 25 Quit
     Menu Show
     Return
 
@@ -127,14 +133,41 @@ Sub MiningToolCheck ; Mining tool interrupt
     Set %MiningToolCount #FindCnt
     If #FindCnt = 0
     {
-        Display You have run out of mining tools, script halting.
-        menu Hide
-        Halt
+        Display You have run out of mining tools.
     }
     Set #LObjectID #FindID ; Set Mining Tool as Last Object
     menu Set MiningTools Mining Tools: %MiningToolCount
     Return
-
+    
+Sub MineMinoc
+    GoSub AutoFind 2560 496 ; Starting Position
+    Event Macro 1 0 All Stay
+    GoSub MineCircle
+    Event Macro 1 0 All Follow Me
+    GoSub AutoFind 2560 488 ; Node 1
+    Event Macro 1 0 All Stay
+    GoSub MineCircle
+    Event Macro 1 0 All Follow Me
+    GoSub AutoFind 2568 488 ; Node 2
+    Event Macro 1 0 All Stay
+    GoSub MineCircle
+    Event Macro 1 0 All Follow Me
+    GoSub AutoFind 2568 480 ; Node 3
+    Event Macro 1 0 All Stay
+    GoSub MineCircle
+    Event Macro 1 0 All Follow Me
+    GoSub AutoFind 2576 480 ; Node 4
+    Event Macro 1 0 All Stay
+    GoSub MineCircle
+    Event Macro 1 0 All Follow Me
+    GoSub AutoFind 2567 486 ; Run Back Checkpoint 1
+    GoSub AutoFind 2559 495 ; Run Back Checkpoint 2
+    GoSub AutoFind 2561 502 ; Forge Location
+    GoSub Smelt
+    GoSub AutoFind 2560 496 ; Starting Position
+    Event Macro 1 0 All Stay
+    Return
+    
 Sub MineCircle ; Mine Every Surrounding Tile
     GoSub MiningToolCheck
     For %y -1 1 ; y-axis
@@ -322,6 +355,14 @@ Sub OrganizeIngots
     Set %Col4 80
     Set %Col5 100
 
+    FindItem %Ingots C_ , %ToolBag
+    For #FindIndex 0 #FindCnt
+    {
+        ExEvent Drag #FindID #FindStack
+        Wait %EvDelay
+        ExEvent DropC %BankIngotContainer
+        Wait %EvDelay
+    }
     FindItem %Ingots C_ , #BackpackID
     Wait 5
     For #FindIndex 1 #FindCnt
@@ -384,4 +425,9 @@ Sub 8x8
     Set %y #CharPosY % 8
     Menu Set XLoc %x
     Menu Set YLoc %y
+    Return
+    
+Sub AutoFind
+    Event PathFind %1 %2
+    Wait 5s
     Return
