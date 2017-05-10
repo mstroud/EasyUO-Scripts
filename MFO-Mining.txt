@@ -6,23 +6,58 @@ Mainloop:
     If #menuButton = Mine
     {
         GoSub MineCircle
-        Set #menuButton
+        Set #menuButton Nothing
 
     }
     If #menuButton = Smelt
     {
         GoSub Smelt
-        Set #menuButton
+        Set #menuButton Nothing
     }
     If #menuButton = Quit
     {
         menu Hide
         Halt
     }
+    If #menuButton = Consolidate
+    {
+        GoSub DumpOre
+        gosub ConsolidateOre %IronCol
+        gosub ConsolidateOre %DullCopperCol
+        gosub ConsolidateOre %ShadowCol
+        gosub ConsolidateOre %CopperCol
+        ;gosub ConsolidateOre %BronzeCol
+        ;gosub ConsolidateOre %GoldCol
+        ;gosub ConsolidateOre %AgapiteCol
+        ;gosub ConsolidateOre %VeriteCol
+        ;gosub ConsolidateOre %ValoriteCol
+        If %UsePackHorse = #True
+            GoSub LoadHorse
+        Set #menuButton Nothing
+    }
+    If #menuButton = LoadHorse
+    {
+        GoSub LoadHorse
+        Set #menuButton Nothing
+    }
+    If #menuButton = Follow
+    {
+        Event Macro 1 0 All Follow Me
+        Set #menuButton Nothing
+    }
+    If #menuButton = Stay
+    {
+        Event Macro 1 0 All Stay
+        Set #menuButton Nothing
+    }
     GoSub 8x8
     Goto Mainloop
 
 Sub Initialize ; Initialize Global Variables and Starting Checks
+    Menu Window Size 320 115
+    Menu Window Title Mining Assist Suite_v1.1
+    Menu Text Init 10 85 Initializing...
+    Menu Show
     Set %EvDelay 15 ; Event Delay
     Set %MiningTool QPF_TWF ; Mining Tool Object Types
     Set %MiningToolCount 0
@@ -45,6 +80,10 @@ Sub Initialize ; Initialize Global Variables and Starting Checks
     Set %UsePackHorse #True ; Set #True if You're Using a Pack Horse
     Set %PackHorse ZGFMMMD ; Pack Horse Container ID
 
+    Set #LObjectID #BackpackID
+    Event Macro 17 0 ; Open Main Backpack
+    Wait %EvDelay
+
     Set #LObjectID %ToolBag
     Event Macro 17 0 ; Open Mining Tool Bag
     Wait %EvDelay
@@ -64,15 +103,22 @@ Sub MiningToolInit
     Return
 
 Sub CreateMenu
-    menu Window Size 190 70
-    menu Window Title Mining Assist Suite
-    menu Button Mine 10 10 50 25 Mine
-    menu Button Smelt 70 10 50 25 Smelt
-    menu Button Quit 130 10 50 25 Quit
-    menu Text MiningTools 10 45 Mining Tools: %MiningToolCount
-    menu edit xloc 125 40 15
-    menu edit yloc 150 40 15
-    menu Show
+    Menu Clear
+    Menu Font Align Center
+    Menu Window Title Mining Assist Suite_v1.1
+    Menu Button Mine 10 10 50 25 Mine
+    Menu Button Smelt 70 10 50 25 Smelt
+    Menu Button Consolidate 130 10 85 25 Consolidate
+    Menu Button LoadHorse 225 10 85 25 Load Horse
+    Menu Button Quit 260 80 50 25 Quit
+    Menu Button Follow 10 40 145 35 Follow
+    Menu Button Stay 165 40 145 35 Stay
+    Menu Text MiningTools 10 85 Mining Tools: %MiningToolCount
+    Menu Text XLabel 145 85 X:
+    Menu Edit XLoc 160 80 20
+    Menu Text YLabel 190 85 Y:
+    Menu Edit YLoc 205 80 20
+    Menu Show
     Return
 
 Sub MiningToolCheck ; Mining tool interrupt
@@ -142,8 +188,8 @@ Sub WeightCheck ; Check if Maximum Weight
     }
     Return
     
-Sub DumpOre ; Dump All Ore From Backpack to Ground
-    FindItem %Ore C_ , #BackpackID
+Sub DumpOre ; Dump All Ore From Open Packs
+    FindItem %Ore C
     Wait 5
     For #FindIndex 1 #FindCnt
     {
