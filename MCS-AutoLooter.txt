@@ -30,11 +30,12 @@ Set %slow_delay           700   ; (ms) Delay for looting items slowly to avoid r
 ;------------------------------------------------------------------------------
 ; Mode defaults
 ;------------------------------------------------------------------------------
-Set %pvp_pvez_mode        0     ; Default loot mode to PvE
+Set %pvp_pvez_mode        1     ; Default loot mode to PvE
 
 ;------------------------------------------------------------------------------
 ; Item IDs
 ;------------------------------------------------------------------------------
+Set %itid_corpses         YFM_PNF_JNF
 Set %itid_containers      ZJF_CKF_YKK_LKF_CUD
 Set %itid_weapons         YPO_BNF_CPH_INF_FSF_OSF_ASF_HNF_FMH_CNF_LSF_NSF_ISF_SMH_RMH_CSF_ZRF_MPH_LPH_MSF_BSF_KPO_GUO_KTF_JTF_BPH_EPH_ZSF_ATF_JPH_SOH_POH_NMH_OMH_LPO_ZTO_XTH_YTH_HSF_KSF_NPO_XPO_FUO_JPO_QPF_NPF_KPH_FYG_RHM_SFR_SRH_AQF_PPF_TSF_WSF_BUO_VPO_WPO_WRH_VRH_XRH_YRH_LTF_MTF_OPO_RRH_CUO_OLH_JOH_URH_EMH_WTH_DMH_QMH_CFF_BFF_PMH_GMH_ZPF_CQF_FFF_RPF_TRH_YSF_XSF_FBG_VTH_AUH_ZTH_UOH_VOH_AUO_MPO_BUH_CUH_DMH_GFF_QOH_HFF_TLH_GBG_WOH_TOH_QPO_SPO_WOH_TOH_JSF_USF_LMH_MMH_QPO_SPO_PPO_RPO_JSF_USF_LMH_MMH_PPO_RPO_JSF_KTO
 Set %itid_regs            RZF_SZF_JZF_MZF_KZF_JUF_WZF_KUF
@@ -69,7 +70,7 @@ HotKeyLoop:
     until #FALSE
 
 ;==============================================================================
-; Automatically loot all corpses in a 2x2 tile
+; Automatically loot all corpses in a 2 tile radius
 ;==============================================================================
 sub AutoLoot
     Set %count 0
@@ -82,34 +83,32 @@ sub AutoLoot
       return
   
     ; Decide what to loot
-    If %pvp_pvez_mode = 0
+    If %pvp_pvez_mode = 1
     {
       ; What to loot in PvP mode:
       
       ; Loot stuff in order of importance, bags and weapons first etc.
       ;
       ; Weapons (ALL)
-     ;GoSub LootItems %fast_delay YPO_BNF_CPH_INF_FSF_OSF_ASF_HNF_FMH_CNF_LSF_NSF_ISF_SMH_RMH_CSF_ZRF_MPH_LPH_MSF_BSF_KPO_GUO_KTF_JTF_BPH_EPH_ZSF_ATF_JPH_SOH_POH_NMH_OMH_LPO_ZTO_XTH_YTH_HSF_KSF_NPO_XPO_FUO_JPO_QPF_NPF_KPH_FYG_RHM_SFR_SRH_AQF_PPF_TSF_WSF_BUO_VPO_WPO_WRH_VRH_XRH_YRH_LTF_MTF_OPO_RRH_CUO_OLH_JOH_URH_EMH_WTH_DMH_QMH_CFF_BFF_PMH_GMH_ZPF_CQF_FFF_RPF_TRH_YSF_XSF_FBG_VTH_AUH_ZTH_UOH_VOH_AUO_MPO_BUH_CUH_DMH_GFF_QOH_HFF_TLH_GBG_WOH_TOH_QPO_SPO_WOH_TOH_JSF_USF_LMH_MMH_QPO_SPO_PPO_RPO_JSF_USF_LMH_MMH_PPO_RPO_JSF_KTO
       GoSub LootItems %fast_delay %itid_weapons
       ; Bags & containers
       GoSub LootItems %fast_delay %itid_containers
       ; Reagents
-     ;GoSub LootItems %slow_delay RZF_SZF_JZF_MZF_KZF_JUF_WZF_KUF
       GoSub LootItems %slow_delay %itid_regs
       ; Potions
       GoSub LootItems %slow_delay TUF ; Explos before rest of the pots
       GoSub LootItems %slow_delay ZUF_UUF_YUF_NUF_XUF
       ; Gold
-      GoSub LootItems %fast_delay POF
+      GoSub LootItems %fast_delay %itid_gold
     }
     Else
     {
       ; What to loot in PvE mode:
       
       ; Reagents
-      GoSub LootItems %slow_delay RZF_SZF_JZF_MZF_KZF_JUF_WZF_KUF
+      GoSub LootItems %slow_delay %itid_regs
       ; Gold
-      GoSub LootItems %slow_delay POF
+      GoSub LootItems %slow_delay %itid_gold
     }
     Event SysMessage Items looted: %count
     return
@@ -122,6 +121,7 @@ sub Manual
   
     GoSub TargetCorpse
     GoSub LootItems %slow_delay *
+  
     Event SysMessage Items looted: %count
     return
 
@@ -131,21 +131,23 @@ sub Manual
 sub TargetCorpse
     Event SysMessage Target the corpse you wish to loot
   
-    Set #TARGCURS 1
-    targloop:
-    If #TARGCURS = 1
-        goto targloop
-      
-    finditem #LTARGETID G_2
-    
-    If #FINDCNT > 0 && #FINDTYPE in YFM_PNF_JNF
+   ;Set #TARGCURS 1
+   ;targloop:
+   ;If #TARGCURS = 1
+   ;    goto targloop
+    Target
+    WaitForTarget
+
+    FindItem #LTARGETID G_2
+    If #FINDCNT > 0 && #FINDTYPE in %itid_corpses
     {
         GoSub OpenCorpse #LTARGETID
     }
     Else
     {
         Event SysMessage Error: that is not a corpse or it's too far
-        exit
+       ;exit
+        goto HotKeyLoop
     }
     return
 
@@ -158,7 +160,6 @@ sub FindCorpse
     For %i 0 2
     {
         FindItem YFM_KNF G_ , %i
-    
         If #FINDCNT > 0
         {
             Set %corpseID #FINDID
@@ -243,10 +244,12 @@ sub SetLootBag
     ; Pick a new loot bag
     Event SysMessage Target the container in your backpack you wish to use as a loot bag, or target yourself
     
-    Set #TARGCURS 1
-    targloop:
-    If #TARGCURS = 1
-        goto targloop
+   ;Set #TARGCURS 1
+   ;targloop:
+   ;If #TARGCURS = 1
+   ;    goto targloop
+    Target
+    WaitForTarget
     
     ; Analyze and set users choice
     FindItem #LTARGETID C_ , #BACKPACKID
@@ -267,15 +270,15 @@ sub SetLootBag
 ;==============================================================================
 sub SwitchLootMode
     Sleep 100
-    If %pvp_pvez_mode = 0
+    If %pvp_pvez_mode = 1
     {
         Event SysMessage Switched to mode: PvE
-        Set %pvp_pvez_mode 1
+        Set %pvp_pvez_mode 0
     }
     Else
     {
         Event SysMessage Switched to mode: PvP
-        Set %pvp_pvez_mode 0
+        Set %pvp_pvez_mode 1
     }
     return
 
