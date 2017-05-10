@@ -1,18 +1,31 @@
-GoSub Initialize
-GoSub MiningToolInit
-GoSub CreateMenu
+; [YO] Mining Suite v1.3
+
+GoSub Initialize ; Initialize Global Vars
+GoSub MiningToolInit ; Moves Mining Tools to Tool Bag
+GoSub CreateMenu ; Creates Main Window
+
+; ///////////////////////////
+; //  Main Execution Loop  //
+; ///////////////////////////
 
 Mainloop:
     If #menuButton = Mine
     {
+        Menu Clear
+        Menu Text Status 10 115
         GoSub MineCircle
         Set #menuButton Nothing
-
+        Menu Clear
+        GoSub CreateMenu
     }
     If #menuButton = Smelt
     {
+        Menu Clear
+        Menu Text Status 10 115
         GoSub Smelt
         Set #menuButton Nothing
+        Menu Clear
+        GoSub CreateMenu
     }
     If #menuButton = Quit
     {
@@ -21,29 +34,54 @@ Mainloop:
     }
     If #menuButton = Consolidate
     {
-        GoSub DumpOre
-        gosub ConsolidateOre %IronCol
-        gosub ConsolidateOre %DullCopperCol
-        gosub ConsolidateOre %ShadowCol
-        gosub ConsolidateOre %CopperCol
-        ;gosub ConsolidateOre %BronzeCol
-        ;gosub ConsolidateOre %GoldCol
-        ;gosub ConsolidateOre %AgapiteCol
-        ;gosub ConsolidateOre %VeriteCol
-        ;gosub ConsolidateOre %ValoriteCol
+        Menu Clear
+        Menu Text Status 10 115
+        GoSub DumpPack
+        GoSub ConsolidateOre %IronCol %IronLabel
+        GoSub ConsolidateOre %DullCopperCol %DullCopperLabel
+        GoSub ConsolidateOre %ShadowCol %ShadowLabel
+        GoSub ConsolidateOre %CopperCol %CopperLabel
+        GoSub ConsolidateOre %BronzeCol %BronzeLabel
+        GoSub ConsolidateOre %GoldCol %GoldLabel
+        GoSub ConsolidateOre %AgapiteCol %AgapiteLabel
+        GoSub ConsolidateOre %VeriteCol %VeriteLabel
+        GoSub ConsolidateOre %ValoriteCol %ValoriteLabel
         If %UsePackHorse = #True
             GoSub LoadHorse
         Set #menuButton Nothing
+        Menu Clear
+        GoSub CreateMenu
     }
     If #menuButton = LoadHorse
     {
+        Menu Clear
+        Menu Text Status 10 115
         GoSub LoadHorse
         Set #menuButton Nothing
+        Menu Clear
+        GoSub CreateMenu
     }
     If #menuButton = MineMinoc
     {
+        Menu Clear
+        Menu Text Status 10 115
         GoSub MineMinoc
         Set #menuButton Nothing
+        Menu Clear
+        GoSub CreateMenu
+    }
+    If #menuButton = BankIngots
+    {
+        Menu Clear
+        Menu Text Status 10 115
+        Event Macro 1 0 Bank
+        Set #LObjectID %BankIngotContainer
+        Event Macro 17 0
+        Gosub MoveIngots %ToolBag %BankIngotContainer
+        GoSub OrganizeIngots %BankIngotContainer
+        Set #menuButton Nothing
+        Menu Clear
+        GoSub CreateMenu
     }
     If #menuButton = Follow
     {
@@ -55,67 +93,87 @@ Mainloop:
         Event Macro 1 0 All Stay
         Set #menuButton Nothing
     }
-    GoSub 8x8
+    GoSub 8x8 ; Update Menu X/Y Coords
     Goto Mainloop
 
-Sub Initialize ; Initialize Global Variables and Starting Checks
+; ////////////////////////////////////////////////////////////////
+; //  Initialize Global Variables, Open Containers, Move Tools  //
+; ////////////////////////////////////////////////////////////////
+
+Sub Initialize
     Menu Window Size 320 150
-    Menu Window Title [YO] Mining Suite_v1.2
-    Menu Text Init 10 85 Initializing...
+    Menu Window Title [YO] Mining Suite v1.3
+    Menu Text Status 10 115 Initializing Global Variables...
     Menu Show
-    Set %EvDelay 15 ; Event Delay
-    Set %MiningTool QPF_TWF ; Mining Tool Object Types
-    Set %MiningToolCount 0
-    Set %ToolBag UYOYKMD ; Mining Tool Container ID
+    Set %ShortDelay 5 ; Quarter Second Delay
+    Set %MedDelay 10 ; Half Second Delay
+    Set %LongDelay 15 ; Three-Quarters Second Delay
+    Set %MiningTool QPF_TWF ; Pickaxe / Shovel Object Types
+    Set %MiningToolCount 0 ; Init
+    Set %ToolBag UYOYKMD ; Mining Tool Container ID (Container for Ingots and Tools)
+    Set %BankIngotContainer FDWGMMD
 
     Set %Ore TVJ_DWJ_EWJ_GWJ ; Ore Object Types
-    Set %Ingots ENK
+    Set %Ingots ENK ; Ingot Object Type
 
-    ; Ore Color Values
+    ; ////////////////////////
+    ; //  Ore Color Values  //
+    ; ////////////////////////
+    Menu Set Status Initializing Ore Variables...
     Set %IronCol 0
+    Set %IronLabel Iron
     Set %DullCopperCol 2419
+    Set %DullCopperLabel Dull Copper
     Set %ShadowCol 2406
+    Set %ShadowLabel Shadow
     Set %CopperCol 2413
+    Set %CopperLabel Copper
     Set %BronzeCol 2418
+    Set %BronzeLabel Bronze
     Set %GoldCol 2213
+    Set %GoldLabel Gold
     Set %AgapiteCol 2425
+    Set %AgapiteLabel Agapite
     Set %VeriteCol 2207
+    Set %VeriteLabel Verite
     Set %ValoriteCol 2219
+    Set %ValoriteLabel Valorite
 
     Set %UsePackHorse #True ; Set #True if You're Using a Pack Horse
     Set %PackHorse ZGFMMMD ; Pack Horse Container ID
 
+    Menu Set Status Opening Containers...
     Set #LObjectID #BackpackID
     Event Macro 17 0 ; Open Main Backpack
-    Wait %EvDelay
+    Wait %LongDelay
 
     Set #LObjectID %ToolBag
     Event Macro 17 0 ; Open Mining Tool Bag
-    Wait %EvDelay
+    Wait %LongDelay
     Return
 
 Sub MiningToolInit
     GoSub MiningToolCheck
     FindItem %MiningTool C_ , #BackpackID ; Find Mining Tools in Main Backpack
-    Wait 5
+    Wait %ShortDelay
     For #FindIndex 1 #FindCnt
     {
+        Menu Set Status Organizing Mining Tools: #FindCnt Remaining
         ExEvent Drag #FindID 1 ; Drag Mining Tool
-        Wait %EvDelay
+        Wait %MedDelay
         ExEvent DropC %ToolBag 0 0; Drop Mining Tool in Mining Tool Bag
-        Wait %EvDelay
+        Wait %MedDelay
     }
     Return
 
 Sub CreateMenu
     Menu Clear
-    Menu Font Align Center
-    Menu Window Title Mining Assist Suite_v1.1
     Menu Button Mine 10 10 50 25 Mine
     Menu Button Smelt 70 10 50 25 Smelt
     Menu Button Consolidate 130 10 85 25 Consolidate
     Menu Button LoadHorse 225 10 85 25 Load Horse
-    Menu Button MineMinoc 10 40 300 25 Mine Minoc
+    Menu Button MineMinoc 10 40 145 25 Mine Minoc
+    Menu Button BankIngots 165 40 145 25 Bank Ingots
     Menu Button Follow 10 70 145 35 Follow
     Menu Button Stay 165 70 145 35 Stay
     Menu Text MiningTools 10 115 Mining Tools: %MiningToolCount
@@ -128,6 +186,7 @@ Sub CreateMenu
     Return
 
 Sub MiningToolCheck ; Mining tool interrupt
+    Menu Set Status Checking Mining Tool...
     FindItem %MiningTool C ; Find Mining Tool in any Open Containers
     Wait 5
     Set %MiningToolCount #FindCnt
@@ -140,23 +199,23 @@ Sub MiningToolCheck ; Mining tool interrupt
     Return
     
 Sub MineMinoc
-    GoSub AutoFind 2560 496 ; Starting Position
+    GoSub AutoFind 2560 496 ; Starting Position / Node 1
     Event Macro 1 0 All Stay
     GoSub MineCircle
     Event Macro 1 0 All Follow Me
-    GoSub AutoFind 2560 488 ; Node 1
+    GoSub AutoFind 2560 488 ; Node 2
     Event Macro 1 0 All Stay
     GoSub MineCircle
     Event Macro 1 0 All Follow Me
-    GoSub AutoFind 2568 488 ; Node 2
+    GoSub AutoFind 2568 488 ; Node 3
     Event Macro 1 0 All Stay
     GoSub MineCircle
     Event Macro 1 0 All Follow Me
-    GoSub AutoFind 2568 480 ; Node 3
+    GoSub AutoFind 2568 480 ; Node 4
     Event Macro 1 0 All Stay
     GoSub MineCircle
     Event Macro 1 0 All Follow Me
-    GoSub AutoFind 2576 480 ; Node 4
+    GoSub AutoFind 2576 480 ; Node 5
     Event Macro 1 0 All Stay
     GoSub MineCircle
     Event Macro 1 0 All Follow Me
@@ -164,35 +223,42 @@ Sub MineMinoc
     GoSub AutoFind 2559 495 ; Run Back Checkpoint 2
     GoSub AutoFind 2561 502 ; Forge Location
     GoSub Smelt
-    GoSub AutoFind 2560 496 ; Starting Position
-    Event Macro 1 0 All Stay
     Return
     
 Sub MineCircle ; Mine Every Surrounding Tile
     GoSub MiningToolCheck
     For %y -1 1 ; y-axis
     {
+        If %y = -1
+            Set %yLabel N
+        If %y = 1
+            Set %yLabel S
         For %x -1 1 ; x-axis
         {
+            If %x = -1
+                Set %xLabel W
+            If %x = 1
+                Set %xLabel E
             If %x <> 0
             {
                 If %y <> 0
                 {
+                    Set %Node %yLabel , %xLabel
                     Set #LTargetKind 2
                     Set #LTargetX #CharPosX + %x
                     Set #LTargetY #CharPosY + %y
-                    Set #LTargetZ #CharPosZ
 
                     Set %MineTrigger #True
                     While %MineTrigger <> #False
                     {
+                        Menu Set Status Mining %Node Node...
                         If You_have_worn_out_your_tool! in #SysMsg
                             gosub MiningToolCheck
-
+                        Wait %ShortDelay
                         Event Macro 17 0 ; LastObject
                         Target
                         Event Macro 22 0 ; LastTarget
-                        Wait %EvDelay
+                        Wait %MedDelay
                         If There_is_no_metal_here in #sysMsg || You_can't_mine_that in #sysMsg || That_is_too_far_away in #sysMsg || You_can't_mine_there in #sysMsg
                             Set %MineTrigger #False
                     }
@@ -206,38 +272,60 @@ Sub MineCircle ; Mine Every Surrounding Tile
 Sub WeightCheck ; Check if Maximum Weight
     If #Weight > #MaxWeight
     {
-        GoSub DumpOre
-        gosub ConsolidateOre %IronCol
-        gosub ConsolidateOre %DullCopperCol
-        gosub ConsolidateOre %ShadowCol
-        gosub ConsolidateOre %CopperCol
-        ;gosub ConsolidateOre %BronzeCol
-        ;gosub ConsolidateOre %GoldCol
-        ;gosub ConsolidateOre %AgapiteCol
-        ;gosub ConsolidateOre %VeriteCol
-        ;gosub ConsolidateOre %ValoriteCol
+        If %UsePackHorse = #True
+            Event 1 0 All Come
+
+        GoSub DumpPack
+        GoSub DumpHorse
+
+        GoSub ConsolidateOre %IronCol %IronLabel
+        GoSub ConsolidateOre %DullCopperCol %DullCopperLabel
+        GoSub ConsolidateOre %ShadowCol %ShadowLabel
+        GoSub ConsolidateOre %CopperCol %CopperLabel
+        GoSub ConsolidateOre %BronzeCol %BronzeLabel
+        GoSub ConsolidateOre %GoldCol %GoldLabel
+        GoSub ConsolidateOre %AgapiteCol %AgapiteLabel
+        GoSub ConsolidateOre %VeriteCol %VeriteLabel
+        GoSub ConsolidateOre %ValoriteCol %ValoriteLabel
         If %UsePackHorse = #True
             GoSub LoadHorse
     }
     Return
     
-Sub DumpOre ; Dump All Ore From Open Packs
-    FindItem %Ore C
-    Wait 5
+Sub DumpPack ; Dump All Ore From Open Packs
+    Menu Set Status Dumping Ore From Backpack...
+    FindItem %Ore C_ , #BackpackID
+    Wait %ShortDelay
     For #FindIndex 1 #FindCnt
     {
         ExEvent Drag #FindID #FindStack
-        Wait %EvDelay
+        Wait %MedDelay
         ExEvent DropG #CharPosX #CharPosY #CharPosZ
-        Wait %EvDelay
+        Wait %MedDelay
     }
-    If %UsePackHorse = #True
-        Event Macro 1 0 All Come
+    Return
+    
+Sub DumpHorse
+    Menu Set Status Dumping Ore From Pack Horse...
+    Set #LObjectID %PackHorse
+    Event Macro 17 0
+    Wait %MedDelay
+    FindItem %Ore C_ , %PackHorse
+    Wait %ShortDelay
+    For #FindIndex 1 #FindCnt
+    {
+        ExEvent Drag #FindID #FindStack
+        Wait %MedDelay
+        ExEvent DropG #CharPosX #CharPosY #CharPosZ
+        Wait %MedDelay
+    }
     Return
 
 Sub ConsolidateOre ; Comsolidate Ore Stacks on Ground by Type
+    Menu Set Status Consolidating %2 Ore...
+
     FindItem %Ore G_2
-    Wait 5
+    %ShortDelay
     For #FindIndex 1 #FindCnt
     {
         If #FindCol = %1
@@ -247,33 +335,32 @@ Sub ConsolidateOre ; Comsolidate Ore Stacks on Ground by Type
         }
     }
     For #FindIndex 1 #FindCnt
+    {
+        If #FindCol = %1
         {
-            If #FindCol = %1
+            If #FindID <> #LTargetID
             {
-                If #FindID <> #LTargetID
-                {
-                    Set #LObjectID #FindID
-                    Event Macro 17 0
-                    Target
-                    Event Macro 22 0
-                    Wait %EvDelay
-                }
+                Set #LObjectID #FindID
+                Event Macro 17 0
+                Target
+                Event Macro 22 0
+                Wait %LongDelay
             }
         }
     }
     Return
     
 Sub LoadHorse ; Load Ore Stacks on Ground Into Pack Horse
+    Menu Set Status Loading Ore Onto Pack Horse...
     FindItem %Ore G_2
-    Wait 5
+    Wait %ShortDelay
     For #FindIndex 1 #FindCnt
     {
         ExEvent Drag #FindID #FindStack
-        Wait %EvDelay
+        Wait %MedDelay
         ExEvent DropC %PackHorse
-        Wait %EvDelay
+        Wait %MedDelay
     }
-    Event Macro 1 0 All Stay
     Return
     
 Sub Smelt
@@ -281,70 +368,78 @@ Sub Smelt
     FindItem %Forge G_2
     If #FindCnt >= 1
     {
-         Set #LObjectID %PackHorse
-         Event Macro 17 0
-         Wait %EvDelay
-         FindItem %Ore C_ , %PackHorse
-         Wait 5
-         For #FindIndex 1 #FindCnt
-         {
-             ExEvent Drag #FindID #FindStack
-             Wait %EvDelay
-             ExEvent DropG #CharPosX #CharPosY #CharPosZ
-             Wait %EvDelay
-         }
-        gosub ConsolidateOre %IronCol
-        gosub ConsolidateOre %DullCopperCol
-        gosub ConsolidateOre %ShadowCol
-        gosub ConsolidateOre %CopperCol
-        ;gosub ConsolidateOre %BronzeCol
-        ;gosub ConsolidateOre %GoldCol
-        ;gosub ConsolidateOre %AgapiteCol
-        ;gosub ConsolidateOre %VeriteCol
-        ;gosub ConsolidateOre %ValoriteCol
+        GoSub DumpPack
+        GoSub DumpHorse
 
-         FindItem %Forge G_2
-         Set #LTargetID #FindID
-         Set #LTargetKind 1
+        GoSub ConsolidateOre %IronCol %IronLabel
+        GoSub ConsolidateOre %DullCopperCol %DullCopperLabel
+        GoSub ConsolidateOre %ShadowCol %ShadowLabel
+        GoSub ConsolidateOre %CopperCol %CopperLabel
+        GoSub ConsolidateOre %BronzeCol %BronzeLabel
+        GoSub ConsolidateOre %GoldCol %GoldLabel
+        GoSub ConsolidateOre %AgapiteCol %AgapiteLabel
+        GoSub ConsolidateOre %VeriteCol %VeriteLabel
+        GoSub ConsolidateOre %ValoriteCol %ValoriteLabel
+        
+        FindItem %Forge G_2
+        Set #LTargetID #FindID
+        Set #LTargetKind 1
 
-         Set %SmeltTrigger #True
-         While %SmeltTrigger = #True
-         {
-             FindItem %Ore G_2
-             For #FindIndex 1 #FindCnt
-             {
-                 If #FindCnt <> 0
-                 {
-                     If #FindStack = 1
-                     {
-                         ExEvent Drag #FindID #FindStack
-                         Wait 15
-                         ExEvent DropC %PackHorse 0 0
-                         Wait 15
-                     }
-                     Else
-                     {
-                         Set #LObjectID #FindID
-                         Event Macro 17 0
-                         Wait 10
-                         Event Macro 22 0
-                         Wait 10
-                     }
-                 }
-             }
-             GoSub OrganizeIngots
-             FindItem %Ore G_2
-             If #FindCnt = 0
-             {
-                 Event Macro 1 0 All Follow Me
-                 Return
-             }
-         }
-         Else
-             Display There are no forges near you.
+        Set %SmeltTrigger #True
+        While %SmeltTrigger = #True
+        {
+            Menu Set Status Smelting Ore...
+            FindItem %Ore G_2
+            Wait %ShortDelay
+            For #FindIndex 1 #FindCnt
+            {
+                If #FindCnt <> 0
+                {
+                    If #FindStack <> 1
+                    {
+                        Set #LObjectID #FindID
+                        Event Macro 17 0
+                        Target
+                        Event Macro 22 0
+                        Wait %MedDelay
+                    }
+                    Else
+                    {
+                        ExEvent Drag #FindID #FindStack
+                        Wait %MedDelay
+                        ExEvent DropC %PackHorse 0 0
+                        Wait %MedDelay
+                    }
+                }
+                Else
+                {
+                    Set %SmeltTrigger #False
+                }
+            }
+        }
+
+        Gosub MoveIngots #BackpackID %ToolBag
+        GoSub OrganizeIngots %ToolBag
+    }
+    Else
+    {
+        Display There are no forges near you.
     }
     Return
     
+Sub MoveIngots
+    Menu Set Status Moving Ingots...
+    FindItem %Ingots C_ , %1
+    Wait %ShortDelay
+    For #FindIndex 1 #FindCnt
+    {
+        ExEvent Drag #FindID #FindStack
+        Wait %MedDelay
+        ExEvent DropC %2
+        Wait %MedDelay
+    }
+    Return
+
 Sub OrganizeIngots
     Set %Row1 0
     Set %Row2 75
@@ -355,68 +450,70 @@ Sub OrganizeIngots
     Set %Col4 80
     Set %Col5 100
 
-    FindItem %Ingots C_ , %ToolBag
-    For #FindIndex 0 #FindCnt
-    {
-        ExEvent Drag #FindID #FindStack
-        Wait %EvDelay
-        ExEvent DropC %BankIngotContainer
-        Wait %EvDelay
-    }
-    FindItem %Ingots C_ , #BackpackID
-    Wait 5
+    Menu Set Status Organizing Ingots...
+    FindItem %Ingots C_ , %1
+    Wait %ShortDelay
     For #FindIndex 1 #FindCnt
     {
         If #FindCol = %IronCol
         {
+            Menu Set Status Organizing Iron Ingots...
             Set %IngotX %Col1
             Set %IngotY %Row1
         }
         If #FindCol = %DullCopperCol
         {
+            Menu Set Status Organizing Dull Copper Ingots...
             Set %IngotX %Col2
             Set %IngotY %Row1
         }
         If #FindCol = %ShadowCol
         {
+            Menu Set Status Organizing Shadow Ingots...
             Set %IngotX %Col3
             Set %IngotY %Row1
         }
         If #FindCol = %CopperCol
         {
+            Menu Set Status Organizing Copper Ingots...
             Set %IngotX %Col4
             Set %IngotY %Row1
         }
         If #FindCol = %BronzeCol
         {
+            Menu Set Status Organizing Bronze Ingots...
             Set %IngotX %Col1
             Set %IngotY %Row2
         }
         If #FindCol = %GoldCol
         {
+            Menu Set Status Organizing Gold Ingots...
             Set %IngotX %Col2
             Set %IngotY %Row2
         }
         If #FindCol = %AgapiteCol
         {
+            Menu Set Status Organizing Agapite Ingots...
             Set %IngotX %Col3
             Set %IngotY %Row2
         }
         If #FindCol = %VeriteCol
         {
+            Menu Set Status Organizing Verite Ingots...
             Set %IngotX %Col4
             Set %IngotY %Row2
         }
         If #FindCol = %ValoriteCol
         {
+            Menu Set Status Organizing Valorite Ingots...
             Set %IngotX %Col5
             Set %IngotY %Row2
         }
 
         ExEvent Drag #FindID #FindStack
-        Wait %EvDelay
-        ExEvent DropC %ToolBag %IngotX %IngotY
-        Wait %EvDelay
+        Wait %MedDelay
+        ExEvent DropC %2 %IngotX %IngotY
+        Wait %MedDelay
     }
     Return
     
@@ -428,6 +525,7 @@ Sub 8x8
     Return
     
 Sub AutoFind
+    Menu Set Status Pathfinding to X: %1 Y: %2
     Event PathFind %1 %2
     Wait 5s
     Return
