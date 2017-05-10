@@ -74,11 +74,14 @@ HotKeyLoop:
 sub AutoLoot
     Set %count 0
     
+    ; Find a corpse nearby
     GoSub findCorpse
   
+    ; If nothing was found, return
     If %corpseID = #FALSE
       return
   
+    ; Decide what to loot
     If %pvp_pvez_mode = 0
     {
       ; What to loot in PvP mode:
