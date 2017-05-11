@@ -75,6 +75,7 @@ Mainloop:
         Menu Clear
         Menu Text Status 10 115
         Event Macro 1 0 Bank
+        Wait %ShortDelay
         Set #LObjectID %BankIngotContainer
         Event Macro 17 0
         Gosub MoveIngots %ToolBag %BankIngotContainer
@@ -158,7 +159,8 @@ Sub MiningToolInit
     Wait %ShortDelay
     For #FindIndex 1 #FindCnt
     {
-        Menu Set Status Organizing Mining Tools: #FindCnt Remaining
+        Set %ToolsRemaining #FindCnt - #FindIndex
+        Menu Set Status Organizing Mining Tools: %ToolsRemaining Remaining
         ExEvent Drag #FindID 1 ; Drag Mining Tool
         Wait %MedDelay
         ExEvent DropC %ToolBag 0 0; Drop Mining Tool in Mining Tool Bag
@@ -276,7 +278,6 @@ Sub WeightCheck ; Check if Maximum Weight
             Event 1 0 All Come
 
         GoSub DumpPack
-        GoSub DumpHorse
 
         GoSub ConsolidateOre %IronCol %IronLabel
         GoSub ConsolidateOre %DullCopperCol %DullCopperLabel
@@ -401,7 +402,7 @@ Sub Smelt
                         Event Macro 17 0
                         Target
                         Event Macro 22 0
-                        Wait %MedDelay
+                        Wait %LongDelay
                     }
                     Else
                     {
