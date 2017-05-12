@@ -1,0 +1,85 @@
+initEvents
+
+Set %animalcnt 0
+Set #LPC 100
+
+finditem * G_10
+if #FINDCNT > 0
+{
+  for #FINDINDEX 1 #FINDCNT
+  {
+    event property #FINDID
+    str pos #PROPERTY $
+    set %tmp #STRRES - 1
+    str left #PROPERTY %tmp
+    set %name #STRRES
+    if #FINDSTACK > 1
+    {
+       str len #FINDSTACK
+       set %tmp #STRRES + 1
+       str del %name 1 %tmp
+       set %name #STRRES
+    }
+    set %modx #CURSORX - #FINDX
+    set %mody #CURSORY - #FINDY
+    set %mod %modx , _ , %mody
+    set %location LOCATION: , #SPC , BAG, , BAG , #SPC , ID: , #SPC , #FINDBAGID
+    if #findkind = 1
+       set %location #FINDDIST , #SPC , TILES , #SPC , AWAY
+    set %amount #FINDSTACK
+    if #FINDSTACK = 0
+       set %amount 1
+
+    set %rep (blue) , #SPC , INNOCENT
+    if #FINDREP = 2
+       set %rep (green) , #SPC , friend
+    if #FINDREP = 3
+    {
+       set %rep (grey) , #SPC , animal
+       Set %animalcnt ( %animalcnt + 1 )
+       Set %aid . %animalcnt #FINDID
+    }
+    if #FINDREP = 4
+       set %rep (grey) , #SPC , criminal
+    if #FINDREP = 5
+       set %rep (orange) , #SPC , enemy
+    if #FINDREP = 6
+       set %rep (red) , #SPC , murderer
+    if #FINDREP = 7
+       set %rep (yellow) , #SPC , invunerable
+
+    ;display yesno Entity: #FINDINDEX of #FINDCNT $ Item: %name $ ID: #FINDID $ Type: #FINDTYPE $ Amount: %amount $ %location $ X: #FINDX
+    ;              + $ Y: #FINDY $ Z: #FINDZ $ # , findmod: , #spc , %mod $ Rep: %rep $ Colour: #FINDCOL $ $ Go again?
+  }
+}
+
+halt
+
+Set %lastid 0
+for %i 1 %animalcnt
+{
+    ;display ok %aid . %i
+    Set %curid %aid . %i
+    if %lastid <> 0
+    {
+       gosub Provocation
+       Event Macro 13 21
+       wait 10s
+    }
+       
+    Set %lastid %curid
+    
+}
+
+halt
+
+Sub Provocation
+    Event Macro 13 22
+    Target
+    Event Macro 22 0
+    Target
+    Set #LTARGETID %lastid
+    Event Macro 22 0
+    Wait 5
+    return
+

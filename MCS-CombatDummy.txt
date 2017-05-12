@@ -1,0 +1,4 @@
+initEvents
+
+Event Macro 17
+wait 4s
