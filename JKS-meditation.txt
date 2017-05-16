@@ -16,9 +16,7 @@ Sub CheckDranks
   Return
 
 Sub GetSkill
-  While #FindCnt > 0
-  {
-    if #mana < 100
+    if #mana < 15
       {
        Event Macro 13 46
        Wait 150
@@ -31,7 +29,6 @@ Sub GetSkill
        GoSub GetSkill
       }
     }
-  }
   Return
 
 Sub GetKrunk
@@ -40,6 +37,6 @@ Sub GetKrunk
   Event Macro 17 0
   Wait 45
   Event Macro 23 0
-  Wait 45
+  Wait 100
   GoSub CheckDranks
   Return
