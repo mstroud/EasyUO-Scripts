@@ -1,0 +1,44 @@
+GoSub CheckDranks
+
+Sub CheckDranks
+  Set %DrankyDrank LTD
+  FindItem %DrankyDrank C_ , #BackpackID ; Find yo drink
+  Wait 5
+  Set %DrankCount #FindCnt
+  If #FindCnt = 0
+  {
+    event SysMessage Get thee to a liquor store! The alcohol is gone, the party is over :(
+  }
+  Else
+  {
+    GoSub GetSkill
+  }
+  Return
+
+Sub GetSkill
+  While #FindCnt > 0
+  {
+    if #mana < 100
+      {
+       Event Macro 13 46
+       Wait 150
+       GoSub GetSkill
+      }
+    else
+      {
+       event SysMessage Time to Drink!
+       GoSub GetKrunk
+       GoSub GetSkill
+      }
+    }
+  }
+  Return
+
+Sub GetKrunk
+  event SysMessage CHUG CHUG CHUG
+  Set #LObjectID #FindID
+  Event Macro 17 0
+  Wait 45
+  Event Macro 23 0
+  Wait 45
+  Return
