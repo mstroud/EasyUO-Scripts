@@ -17,7 +17,7 @@ Sub CheckDranks
 
 Sub GetSkill
     chooseSkill Medi
-    if #mana < (-1 * #skill) + 100
+    if #mana < 100 - #skill
       {
        Event Macro 13 46
        Wait 150
