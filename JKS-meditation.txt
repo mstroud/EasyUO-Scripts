@@ -41,4 +41,5 @@ Sub GetKrunk
   Wait 45
   Event Macro 23 0
   Wait 45
+  GoSub CheckDranks
   Return
