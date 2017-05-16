@@ -1,0 +1,187 @@
+; [YO] Meditation Suite v1.0
+GoSub Initialize
+
+Mainloop:
+    If #menuButton = AutoMeditate
+    {
+        If #Skill < 1000
+        {
+            Set #menuButton Nothing
+            GoSub AutoMeditate
+            Set #MenuButton Nothing
+        }
+        Else
+        {
+            Display You are already a Grandmaster in Meditation!
+            Set #MenuButton Nothing
+        }
+    }
+    If #menuButton = Reinitialize
+    {
+        GoSub CreateStatusMenu
+        GoSub Initialize
+        Set #menuButton Nothing
+        GoSub CreateMainMenu
+    }
+    If #menuButton = Quit
+    {
+        Menu Clear
+        Halt
+    }
+    GoSub DrankCheck
+    GoSub UpdateStatus
+    Goto Mainloop
+
+Sub Initialize
+    Event SysMessage Initializing Global Variables ...
+    Set %ShortDelay 5 ; Quarter Second Delay
+    Set %MedDelay 10 ; Half Second Delay
+    Set %LongDelay 15 ; Three-Quarters Second Delay
+
+    Set %DrankDelay 20 ; Number of Seconds Between Drinking
+    Set %DrankNum 1 ; Number of Drinks Every %DrankDelay
+    Set %DrankyDrank LTD ; Alcohol
+
+    Event SysMessage Opening Containers...
+    Set #LObjectID #BackpackID
+    Event Macro 17 0
+    Wait %MedDelay
+    ContPos 0 760
+
+    GoSub SkillCheck Medi
+    GoSub CreateMainMenu
+    Return
+
+Sub CreateMainMenu
+    ; Menu Settings
+    Set %MenuWidth 395
+    Set %MenuHeight 85
+
+    ; Button Dimensons
+    Set %2_ButtonX ( %MenuWidth - 25 ) / 2
+    Set %ButtonY 40
+
+    ; Column X-Coordinates
+    Set %2_Col1 10
+    Set %2_Col2 ( %MenuWidth / 2 ) + 5
+
+    Set %SkillCol %2_Col1 + 135
+    Set %ManaCol %SkillCol + 145
+
+    ; Row Y-Coordinates
+    Set %Row1 10
+    Set %StatusRow %Row1 + %ButtonY + 10
+
+    ; Line Coordinates
+    Set %Line1_X %SkillCol - 10
+    Set %Line2_X %ManaCol - 10
+    Set %Line_Height %StatusRow + %ButtonY
+
+    Menu Clear
+    Menu Window Size %MenuWidth %MenuHeight
+    Menu Image Create MenuBG 0 0 320 300
+    Menu Window Title [YO] Meditation Suite v1.0
+
+    Menu Button AutoMeditate %2_Col1 %Row1 %2_ButtonX %ButtonY Get Krunk! (Start)
+    Menu Button Quit %2_Col2 %Row1 %2_ButtonX %ButtonY Stop 'da PARTAYY!!! (Quit)
+
+    Menu Text DrankyDranks %2_Col1 %StatusRow Dranky Dranks: %DrankyDrankCount
+    Menu Image Line MenuBG %Line1_X 60 %Line1_X %Line_Height Black 2
+    Menu Text Skill %SkillCol %StatusRow Meditation Skill: #Skill
+    Menu Image Line MenuBG %Line2_X 60 %Line2_X %Line_Height Black 2
+    Menu Text Mana %ManaCol %StatusRow Mana: #Mana / #MaxMana
+
+    Menu Show
+    Return
+
+Sub DrankCheck
+    FindItem %DrankyDrank % C
+    Wait %ShortDelay
+    Set %DrankyDrankCount #FindCnt
+    If #FindCnt = 0
+    {
+        Display Get thee to a liquor store! The alcohol is gone, the party is over :(
+        Set %AutoMedTrigger #False
+    }
+    Set #LObjectID #FindID
+    Return
+
+Sub SkillCheck
+    chooseSkill %1
+    Return
+
+Sub TimeCheck
+    If ( #Time - %DrankTime ) > %1
+        Return #True
+    Else
+        Return #False
+
+Sub UpdateStatus
+    Menu Set DrankyDranks Dranky Dranks: %DrankyDrankCount
+    Menu Set Skill Meditation Skill: #Skill
+    Menu Set Mana Mana: #Mana / #MaxMana
+    Return
+
+Sub AutoMeditate
+    Menu Set AutoMeditate Game Over Man! (Stop)
+    GoSub BeerBong 3
+    Set %AutoMedTrigger #True
+    Set %TranceTrigger #False
+    While %AutoMedTrigger = #True
+    {
+        Set %SkillNorm ( #Skill / 10 ) + 2
+        If %SkillNorm >= 0 && %SkillNorm < 20
+            Set %OptimalManaLevel ( #MaxMana * 9 ) / 10
+        If %SkillNorm >= 20 && %SkillNorm < 30
+            Set %OptimalManaLevel ( #MaxMana * 8 ) / 10
+        If %SkillNorm >= 30 && %SkillNorm < 40
+            Set %OptimalManaLevel ( #MaxMana * 7 ) / 10
+        If %SkillNorm >= 40 && %SkillNorm < 50
+            Set %OptimalManaLevel ( #MaxMana * 6 ) / 10
+        If %SkillNorm >= 50 && %SkillNorm < 60
+            Set %OptimalManaLevel ( #MaxMana * 5 ) / 10
+        If %SkillNorm >= 60 && %SkillNorm < 70
+            Set %OptimalManaLevel ( #MaxMana * 4 ) / 10
+        If %SkillNorm >= 70 && %SkillNorm < 80
+            Set %OptimalManaLevel ( #MaxMana * 3 ) / 10
+        If %SkillNorm >= 80 && %SkillNorm < 90
+            Set %OptimalManaLevel ( #MaxMana * 2 ) / 10
+        If %SkillNorm >= 90 && %SkillNorm < 100
+            Set %OptimalManaLevel ( #MaxMana * 2 ) / 10
+
+        GoSub TimeCheck %DrankDelay
+
+        If #Result = #True && #Mana >= %OptimalManaLevel
+            GoSub BeerBong %DrankNum
+
+        Event Macro 13 46
+        Wait %MedDelay
+        Wait 10s
+
+        GoSub UpdateStatus
+        If #MenuButton = AutoMeditate
+        {
+            GoSub CreateMainMenu
+            Goto Mainloop
+        }
+    }
+    Return
+
+Sub BeerBong
+    FindItem %DrankyDrank
+    Set #LObjectID #FindID
+    For %x 1 %1
+    {
+        If #FindCnt = 0
+        {
+            FindItem %DrankyDrank
+            Set #LObjectID #FindID
+        }
+        Event Macro 17 0
+        Wait %MedDelay
+        Event Macro 23 0
+        Wait %MedDelay
+        Event SysMessage CHUG ... CHUG ... CHUG ...
+    }
+    Set %DrankTime #Time
+    Return

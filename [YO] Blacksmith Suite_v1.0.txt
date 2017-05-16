@@ -1,0 +1,918 @@
+; [YO] Blacksmith Suite v1.0
+GoSub Initialize ; Initialize Global Vars
+
+; ///////////////////////////
+; //  Main Execution Loop  //
+; ///////////////////////////
+
+Mainloop:
+    If #MenuButton = AutoSmith
+    {
+        GoSub SkillCheck blac
+        If #Skill < 1000
+        {
+            GoSub CreateAutoSmithMenu
+            Set #MenuButton Nothing
+            GoSub AutoSmith
+            Set #MenuButton Nothing
+        }
+        Else
+        {
+            Display You are already a Grandmaster Blacksmith!
+            Set #MenuButton Nothing
+        }
+    }
+    If #MenuButton = AutoBOD
+    {
+        ; GoSub AutoBOD
+        Set #MenuButton Nothing
+    }
+    If #MenuButton = Quit
+    {
+        Menu Hide
+        Halt
+    }
+    Goto Mainloop
+
+Sub Initialize
+    GoSub CreateStatusMenu
+    Menu Set Status Initializing Global Variables...
+    Set %ShortDelay 5 ; Quarter Second Delay
+    Set %MedDelay 10 ; Half Second Delay
+    Set %LongDelay 15 ; Three-Quarters Second Delay
+
+    Set %SmithTool FBG_TBG ; Blacksmith Tool Object Types
+    Set %SmithToolCount 0 ; Init
+
+    Set %ToolBag MHYZLMD ; Smith Tool Container ID
+
+    Set %Ingots ENK ; Ingot Object Type
+
+    Set %SelectedIngotCol 0
+    Set %SelectedIngotLabel Iron
+    Set %SelectedIngotCount Nothing
+
+    Menu Set Status Opening Containers...
+    Set #LObjectID #BackpackID
+    Event Macro 17 0
+    Wait %MedDelay
+    ContPos 0 760
+    Wait %ShortDelay
+
+    Set #LObjectID %ToolBag
+    Event Macro 17 0
+    Wait %MedDelay
+    ContPos 220 775
+    Wait %ShortDelay
+
+    GoSub MoveTools
+    GoSub CreateSmithMenu
+    Return
+
+Sub CreateStatusMenu
+    Menu Clear
+    Menu Window Size 320 40
+    Menu Window Title [YO] Blacksmith Suite v1.0
+    Menu Text Status 10 10
+    Menu Show
+    Return
+
+Sub MoveTools
+    GoSub ToolCheck
+    FindItem %SmithTool C_ , #BackpackID ; Find Mining Tools in Main Backpack
+    Wait %ShortDelay
+    While #FindKind <> -1
+    {
+        Set %ToolsRemaining #FindCnt
+        Menu Set Status Organizing Blacksmith Tools: %ToolsRemaining Remaining
+        ExEvent Drag #FindID 1
+        Wait %MedDelay
+        ExEvent DropC %ToolBag 206 0
+        Wait %MedDelay
+        FindItem %SmithTool C_ , #BackpackID
+    }
+    FindItem %ProspectorTool C_ , #BackpackID
+    While #FindKind <> -1
+    {
+        Set %ToolsRemaining #FindCnt
+        Menu Set Status Organizing Prospector Tools: %ToolsRemaining Remaining
+        ExEvent Drag #FindID 1
+        Wait %MedDelay
+        ExEvent DropC %ToolBag 206 0
+        Wait %MedDelay
+        FindItem %SmithTool C_ , #BackpackID
+    }
+    Return
+
+Sub ToolCheck
+    Menu Set Status Checking Blacksmith Tools...
+    FindItem %SmithTool C
+    Wait %ShortDelay
+    Set %SmithToolCount #FindCnt
+    If #FindCnt = 0
+    {
+        Display You have run out of blacksmith tools.
+        GoSub CreateSmithMenu
+        Goto Mainloop
+    }
+    Set #LObjectID #FindID
+    Menu Set SmithTools Smith Tools: %SmithToolCount
+    Return
+
+Sub IngotCheck
+    Menu Set Status Checking for %SelectedIngotLabel Ingots...
+    FindItem %Ingots C_ , #BackpackID
+    Wait %MedDelay
+    For #FindIndex 1 #FindCnt
+    {
+        If #FindCol = %SelectedIngotCol
+        {
+            Set %SelectedIngotCount #FindStack
+            If #FindStack < 10
+            {
+                Display Not enough %SelectedIngotLabel ingots.
+                GoSub CreateSmithMenu
+            }
+            Return
+        }
+
+    }
+    Display %SelectedIngotLabel Ingots Not Found.
+    GoSub CreateSmithMenu
+    Return
+
+Sub CreateSmithMenu
+    Menu Clear
+    Menu Window Size 355 115
+    Menu Window Title [YO] Blacksmith Suite v1.0
+
+    ; Column X-Coordinates
+    Set %MenuCol 15
+
+    Set %2_Col1 10
+    Set %2_Col2 180
+
+    Set %3_Col1 10
+    Set %3_Col2 125
+    Set %3_Col3 240
+
+    ; Row Y-Coordinates
+    Set %SmithMenuRow1 10
+    Set %SmithMenuRow2 %SmithMenuRow1 + 20
+
+    Set %MainMenuStatus %SmithMenuRow2 + 55
+    Set %BottomRow %SmithMenuRow2 + 50
+    
+    ; Button Dimensons
+    Set %2_ButtonX 165
+    Set %2_ButtonY 40
+    Set %2_ButtonY_Slim 25
+
+    Set %3_ButtonX 110
+    Set %3_ButtonY 40
+    
+    Set %QuitButtonX 50
+    Set %QuitButtonY 25
+
+    ; Smith Menu
+    Menu Text MineMenu %MenuCol %SmithMenuRow1 Blacksmith Menu
+    Menu Button AutoSmith %2_Col1 %SmithMenuRow2 %2_ButtonX %2_ButtonY Auto-Smith
+    Menu Button Auto_BOD %2_Col2 %SmithMenuRow2 %2_ButtonX %2_ButtonY BOD Crafter
+
+    ; Bottom Row
+    Menu Text SmithTools 15 %MainMenuStatus Smith Tools: %SmithToolCount
+    Menu Button Quit 295 %BottomRow %QuitButtonX %QuitButtonY Quit
+    
+    Menu Show
+    Return
+    
+Sub CreateAutoSmithMenu
+    Menu Clear
+    Menu Window Size 355 115
+    Menu Window Title [YO] Blacksmith Suite v1.0
+
+    ; Row Y-Coordinates
+    Set %AutoSmithTitleRow 10
+    Set %AutoSmithMenuRow1 %AutoSmithTitleRow + 20
+    Set %AutoSmithMenuRow2 %AutoSmithMenuRow1 + 20
+    Set %AutoSmithMenuRow3 %AutoSmithMenuRow2 + 20
+    Set %AutoSmithMenuRow4 %AutoSmithMenuRow3 + 20
+
+    Set %AutoStatus %AutoSmithMenuRow4 + 55
+    Set %BottomRow %AutoStatus + 50
+
+    ; Smith Menu
+    Menu Text AutoSmithStatus 10 %AutoSmithTitleRow Auto-Smith Status:
+    Menu Text Status 125 %AutoSmithTitleRow
+
+    GoSub ToolCheck
+    Menu Text SmithTools 10 %AutoSmithMenuRow1 Smith Tools: %SmithToolCount
+
+    GoSub IngotCheck
+    Menu Text IngotsRemaining 10 %AutoSmithMenuRow2 %SelectedIngotLabel %SelectedIngotLabel Ingots Remaining: %SelectedIngotCount
+
+    Menu Text CraftedItemLabel 10 %AutoSmithMenuRow3 Currently Crafting:
+
+    GoSub SkillCheck blac
+    Menu Text CurrentSkill 10 %AutoSmithMenuRow4 Current Blacksmith Level: #Skill
+
+    Menu Button StopAutoSmith 295 10 50 95 Stop
+    
+    Return
+    
+Sub AutoSmith
+    Set %CraftedItem Nothing
+    Set %CraftedItemLabel Nothing
+    GoSub PrimeItem
+
+    Set %AutoSmithTrigger #True
+    While %AutoSmithTrigger = #True
+    {
+        GoSub Smelt %SmithedItems
+        GoSub AutoSmithLevelCheck
+        
+        GoSub ToolCheck
+        Menu Set SmithTools Blackmith Tools: %SmithToolCount
+
+        GoSub IngotCheck
+        Menu Set IngotsRemaining Ingots Remaining: %SelectedIngotCount
+
+        GoSub SmithClick Last
+
+
+        If #MenuButton = StopAutoSmith
+            Set %AutoSmithTrigger #False
+    }
+    GoSub CreateSmithMenu
+    Return
+    
+Sub PrimeItem
+    GoSub SkillCheck blac
+    Menu Set Status Priming Item to Craft...
+    If #Skill < 550 ; Mace
+    {
+        GoSub SmithClick Bash_Mace
+        Return
+    }
+    If #Skill >= 550 && #Skill < 650; Chain Coif
+    {
+        GoSub SmithClick Chainmail_Coif
+        Return
+    }
+    If #Skill >= 650 && #Skill < 700; Scimitar
+    {
+        GoSub SmithClick Bladed_Scimitar
+        Return
+    }
+    If #Skill >= 700 && #Skill < 720; Broadsword
+    {
+        GoSub SmithClick Bladed_Broadsword
+        Return
+    }
+    If #Skill >= 720 && #Skill < 810; Kryss
+    {
+        GoSub Bladed Bladed_Kryss
+        Return
+    }
+    If #Skill >= 810 && #Skill < 830; Katana
+    {
+        GoSub SmithClick Bladed_Katana
+        Return
+    }
+    If #Skill >= 830 && #Skill < 930; Short Spear
+    {
+        GoSub SmithClick Polearm_Short
+        Return
+    }
+    If #Skill >= 930 && #Skill < 980 ; Spear
+    {
+        GoSub SmithClick Polearm_Spear
+        Return
+    }
+    If #Skill >= 980 ; Plate Gloves
+    {
+        GoSub SmithClick Platemail_Gloves
+        Return
+    }
+
+Sub SkillCheck
+    chooseSkill %1
+
+Sub AutoSmithLevelCheck
+    Set %SmithLevel1 YSF ; Mace
+    Set %SmithLevel2 DPH ; Chain Coif
+    Set %SmithLevel3 SOH ; Scimitar
+    Set %SmithLevel4 ATF ; Broadsword
+    Set %SmithLevel5 VRH ; Kryss
+    Set %SmithLevel6 NMH ; Katana
+    Set %SmithLevel7 XRH ; Short Spear
+    Set %SmithLevel8 MTF ; Spear
+    Set %SmithLevel9 ISH ; Plate Gloves
+
+    GoSub SkillCheck blac
+    Menu Set CurrentSkill Current Blacksmith Level: #Skill
+
+    If #Skill = 1001
+    {
+        Display You are a Grandmaster Blacksmith!
+        GoSub CreateSmithMenu
+        Goto Mainloop
+    }
+
+    If #Skill < 550 && %CraftedItem <> %SmithLevel1 ; Mace
+    {
+        GoSub PrimeItem
+        Return
+    }
+
+    If #Skill >= 550 && #Skill < 650 && %CraftedItem <> %SmithLevel2 ; Chain Coif
+    {
+        GoSub PrimeItem
+        Return
+    }
+
+    If #Skill >= 650 && #Skill < 700 && %CraftedItem <> %SmithLevel3 ; Scimitar
+    {
+        GoSub PrimeItem
+        Return
+    }
+
+    If #Skill >= 700 && #Skill < 720 && %CraftedItem <> %SmithLevel4 ; Broadsword
+    {
+        GoSub PrimeItem
+        Return
+    }
+
+    If #Skill >= 720 && #Skill < 810 && %CraftedItem <> %SmithLevel5 ; Kryss
+    {
+        GoSub PrimeItem
+        Return
+    }
+
+    If #Skill >= 810 && #Skill < 830 && %CraftedItem <> %SmithLevel6 ; Katana
+    {
+        GoSub PrimeItem
+        Return
+    }
+
+    If #Skill >= 830 && #Skill < 930 && %CraftedItem <> %SmithLevel7 ; Short Spear
+    {
+        GoSub PrimeItem
+        Return
+    }
+
+    If #Skill >= 930 && #Skill < 980 && %CraftedItem <> %SmithLevel8 ; Spear
+    {
+        GoSub PrimeItem
+        Return
+    }
+
+    If #Skill >= 980 && %CraftedItem <> %SmithLevel9 ; Plate Gloves
+    {
+        GoSub PrimeItem
+        Return
+    }
+    Return
+
+Sub Smelt
+    Set %AutoSmithItems YSF_DPH_SOH_ATF_VRH_NMH_XRH_MTF_ISH ; Crafted Items Object Types
+
+    FindItem %AutoSmithItems C_ , #BackpackID
+    Wait %MedDelay
+    Set %AutoSmithItemCount #FindCnt
+    While %AutoSmithItemCount <> 0
+    {
+        Set %SmeltRemaining %AutoSmithItemCount - #FindIndex + 1
+        Menu Set Status Smelting Crafted Items: %SmeltRemaining
+        GoSub SmithClick Smelt
+        FindItem %AutoSmithItems C_ , #BackpackID
+        Wait %ShortDelay
+        Set #LTargetID #FindID
+        Set #LTargetKind 1
+        Target
+        Event Macro 22 0
+        Wait %MedDelay
+        Set %AutoSmithItemCount %AutoSmithItemCount - 1
+    }
+    Return
+    
+Sub SmithClick
+    FindItem %SmithTool C
+    Set #LObjectID #FindId
+
+    Set %SmithMenuCol_1 70
+    Set %SmithMenuCol_2 270
+
+    Set %SmithMenuRow_1 110
+    Set %SmithMenuRow_2 130
+    Set %SmithMenuRow_3 150
+    Set %SmithMenuRow_4 170
+    Set %SmithMenuRow_5 190
+    Set %SmithMenuRow_6 210
+    Set %SmithMenuRow_7 230
+    Set %SmithMenuRow_8 250
+    Set %SmithMenuRow_9 270
+    Set %SmithMenuRow_10 290
+
+    Set %BottomMenuCol_1 70
+    Set %BottomMenuCol_2 325
+
+    Set %BottomMenuRow_1 390
+    Set %BottomMenuRow_2 410
+    Set %BottomMenuRow_3 450
+
+    If Smelt in %1
+    {
+        Event Macro 17 0
+        Wait %ShortDelay
+        ContPos 40 40
+        Click %BottomMenuCol_1 %BottomMenuRow_1
+        Return
+    }
+    If Ingot in %1
+    {
+        Event Macro 17 0
+        Wait %ShortDelay
+        ContPos 40 40
+        If %Iron in %1
+        {
+            Click %BottomMenuCol_1 %BottomMenuRow_2
+            Wait %ShortDelay
+            Click %SmithMenuCol_2 %SmithMenuRow_1
+            Return
+        }
+    }
+    If Last in %1
+    {
+        Menu Set Status Crafting Last Item
+        Event Macro 17 0
+        Wait %ShortDelay
+        ContPos 40 40
+        Wait %MedDelay
+        Click %BottomMenuCol_2 %BottomMenuRow_3
+        Wait 5s
+        Return
+    }
+    Menu Set Status Crafting Item
+    If Ringmail in %1
+    {
+        Event Macro 17 0
+        Wait %ShortDelay
+        ContPos 40 40
+        Wait %MedDelay
+        Click %SmithMenuCol_1 %SmithMenuRow_2
+        Wait %MedDelay
+        If Gloves in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_1
+            Set %CraftedItem
+            Set %CraftedItemLabel Ringmail Gloves
+            Wait 6s
+            Return
+        }
+        If Sleeves in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_2
+            Set %CraftedItem
+            Set %CraftedItemLabel Ringmail Sleeves
+            Wait 6s
+            Return
+        }
+        If Leggings in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_3
+            Set %CraftedItem
+            Set %CraftedItemLabel Ringmail Leggings
+            Wait 6s
+            Return
+        }
+        If Tunic in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_4
+            Set %CraftedItem WLH
+            Set %CraftedItemLabel Ringmail Tunic
+            Wait 6s
+            Return
+        }
+    }
+
+    If Chainmail in %1
+    {
+        Event Macro 17 0
+        Wait %ShortDelay
+        ContPos 40 40
+        Wait %MedDelay
+        Click %SmithMenuCol_1 %SmithMenuRow_3
+        Wait %MedDelay
+        If Coif in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_1
+            Set %CraftedItem DPH
+            Set %CraftedItemLabel Chainmail Coif
+            Wait 6s
+            Return
+        }
+        If Leggings in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_2
+            Set %CraftedItem
+            Set %CraftedItemLabel Chainmail Leggings
+            Wait 6s
+            Return
+        }
+        If Tunic in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_3
+            Set %CraftedItem
+            Set %CraftedItemLabel Chainmail Tunic
+            Wait 6s
+            Return
+        }
+    }
+
+    If Platemail in %1
+    {
+        Event Macro 17 0
+        Wait %ShortDelay
+        ContPos 40 40
+        Wait %MedDelay
+        Click %SmithMenuCol_1 %SmithMenuRow_4
+        Wait %MedDelay
+        If Female in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_1
+            Set %CraftedItem MSK
+            Set %CraftedItemLabel Female Platemail
+            Wait 6s
+            Return
+        }
+        If Gorget in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_2
+            Set %CraftedItem
+            Set %CraftedItemLabel Platemail Gorget
+            Wait 6s
+            Return
+        }
+        If Gloves in %1
+        {
+            Set %CraftedItemLabel Platemail , #spc , Gloves
+            Menu Set CraftedItemLabel Currently Crafting: %CraftedItemLabel
+            Click %SmithMenuCol_2 %SmithMenuRow_3
+            Set %CraftedItem ISH
+            Wait 6s
+            Return
+        }
+        If Arms in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_4
+            Set %CraftedItem
+            Set %CraftedItemLabel Platemail Arms
+            Wait 6s
+            Return
+        }
+        If Legs in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_5
+            Set %CraftedItem
+            Set %CraftedItemLabel Platemal Legs
+            Wait 6s
+            Return
+        }
+        If Tunic in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_6
+            Set %CraftedItem
+            Set %CraftedItemLabel Platemail Tunic
+            Wait 6s
+            Return
+        }
+    }
+
+    If Helmet in %1
+    {
+        Event Macro 17 0
+        Wait %ShortDelay
+        ContPos 40 40
+        Wait %MedDelay
+        Click %SmithMenuCol_1 %SmithMenuRow_5
+        Wait %MedDelay
+        If Female in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_1
+            Set %CraftedItem
+        }
+        If Gorget in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_2
+            Set %CraftedItem
+        }
+        If Gloves in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_3
+            Set %CraftedItem
+        }
+        If Arms in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_4
+            Set %CraftedItem
+        }
+        If Legs in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_5
+            Set %CraftedItem
+        }
+        If Tunic in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_6
+            Set %CraftedItem
+        }
+    }
+
+    If Shield in %1
+    {
+        Event Macro 17 0
+        Wait %MedDelay
+        Click %SmithMenuCol_1 %SmithMenuRow_6
+        Wait %MedDelay
+        If Buckler in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_1
+            Set %CraftedItem FIK
+            Set %CraftedItemLabel Buckler Shield
+            Wait 6s
+            Return
+        }
+        If Metal in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_2
+            Set %CraftedItem
+            Set %CraftedItemLabel Metal Shield
+            Wait 6s
+            Return
+        }
+        If Bronze in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_3
+            Set %CraftedItem
+            Set %CraftedItemLabel Bronze Shield
+            Wait 6s
+            Return
+        }
+        If Tear_Kite in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_4
+            Set %CraftedItem
+            Set %CraftedItemLabel Tear Kite Shield
+            Wait 6s
+            Return
+        }
+        If Metal_Kite in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_5
+            Set %CraftedItem
+            Set %CraftedItemLabel Metal Kite Shield
+            Wait 6s
+            Return
+        }
+        If Heater in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_6
+            Set %CraftedItem
+            Set %CraftedItemLabel Heater Shield
+            Wait 6s
+            Return
+        }
+    }
+
+    If Bladed in %1
+    {
+        Event Macro 17 0
+        Wait %ShortDelay
+        ContPos 40 40
+        Wait %MedDelay
+        Click %SmithMenuCol_1 %SmithMenuRow_7
+        Wait %MedDelay
+        If Dagger in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_1
+            Set %CraftedItem WSF
+            Set %CraftedItemLabel Dagger
+            Wait 6s
+            Return
+        }
+        If Cutlass in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_2
+            Set %CraftedItem JPH
+            Set %CraftedItemLabel Cutlass
+            Wait 6s
+            Return
+        }
+        If Viking in %1
+        {
+            Set %CraftedItemLabel Viking , #spc , Sword
+            Menu Set CraftedItemLabel Currently Crafting: %CraftedItemLabel
+            Click %SmithMenuCol_2 %SmithMenuRow_3
+            Set %CraftedItem BPH
+            Wait 6s
+            Return
+        }
+        If Longsword in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_4
+            Set %CraftedItem JTF
+            Set %CraftedItemLabel Longsword
+            Wait 6s
+            Return
+        }
+        If Scimitar in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_5
+            Set %CraftedItem
+            Set %CraftedItemLabel Scimitar
+            Wait 6s
+            Return
+        }
+        If Broadsword in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_6
+            Set %CraftedItem
+            Set %CraftedItemLabel Broadsword
+            Wait 6s
+            Return
+        }
+        If Kryss in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_7
+            Set %CraftedItem
+            Set %CraftedItemLabel Kryss
+            Wait 6s
+            Return
+        }
+        If Katana in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_8
+            Set %CraftedItem
+            Set %CraftedItemLabel Katana
+            Wait 6s
+            Return
+        }
+    }
+
+    If Axes in %1
+    {
+        Event Macro 17 0
+        Wait %ShortDelay
+        ContPos 40 40
+        Wait %MedDelay
+        Click %SmithMenuCol_1 %SmithMenuRow_8
+        Wait %MedDelay
+        If Large_Battle in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_1
+            Set %CraftedItem
+            Set %CraftedItemLabel Large Battle Axe
+            Wait 6s
+        }
+        If Double in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_2
+            Set %CraftedItem
+            Set %CraftedItemLabel Double
+            Wait 6s
+        }
+        If BAxe in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_3
+            Set %CraftedItem
+            Set %CraftedItemLabel Battle Axe
+            Wait 6s
+        }
+        If Two_Handed in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_4
+            Set %CraftedItem
+            Set %CraftedItemLabel Two Handed Axe
+            Wait 6s
+        }
+        If Regular in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_5
+            Set %CraftedItem
+            Set %CraftedItemLabel Axe
+            Wait 6s
+        }
+        If %1 Executioner in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_6
+            Set %CraftedItem
+            Set %CraftedItemLabel Executioner's Axe
+            Wait 6s
+        }
+        If %1 War in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_7
+            Set %CraftedItem
+            Set %CraftedItemLabel War Axe
+            Wait 6s
+        }
+    }
+
+    If Polearms in %1
+    {
+        Event Macro 17 0
+        Wait %ShortDelay
+        ContPos 40 40
+        Wait %MedDelay
+        Click %SmithMenuCol_1 %SmithMenuRow_9
+        Wait %MedDelay
+        If Bardiche in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_1
+            Set %CraftedItem
+            Set %CraftedItemLabel Bardiche
+            Wait 6s
+        }
+        If Halberd in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_2
+            Set %CraftedItem
+            Set %CraftedItemLabel Halberd
+            Wait 6s
+        }
+        If War_Fork in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_3
+            Set %CraftedItem
+            Set %CraftedItemLabel War Fork
+            Wait 6s
+        }
+        If Short in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_4
+            Set %CraftedItem
+            Set %CraftedItemLabel Short Spear
+            Wait 6s
+        }
+        If Spear in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_5
+            Set %CraftedItem
+            Set %CraftedItemLabel Spear
+            Wait 6s
+        }
+    }
+
+    If Bashing in %1
+    {
+        Event Macro 17 0
+        Wait %ShortDelay
+        ContPos 40 40
+        Wait %MedDelay
+        Click %SmithMenuCol_1 %SmithMenuRow_10
+        Wait %MedDelay
+        If Mace in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_1
+            Set %CraftedItem YSF
+            Set %CraftedItemLabel Mace
+            Wait 6s
+            Return
+        }
+        If Maul in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_2
+            Set %CraftedItem BUH
+            Set %CraftedItemLabel Maul
+            Wait 6s
+            Return
+        }
+        If War_Mace in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_3
+            Set %CraftedItem
+            Set %CraftedItemLabel War Mace
+            Wait 6s
+            Return
+        }
+        If War_Hammer in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_4
+            Set %CraftedItem
+            Set %CraftedItemLabel War Hammer
+            Wait 6s
+            Return
+        }
+        If Hammer_Pick in %1
+        {
+            Click %SmithMenuCol_2 %SmithMenuRow_5
+            Set %CraftedItem
+            Set %CraftedItemLabel Hammer Pick
+            Wait 6s
+            Return
+        }
+        Wait 6s
+        Return
+    }
+    Return
