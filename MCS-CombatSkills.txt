@@ -41,7 +41,7 @@ Set %count_start_time         #SCNT
 Set %count_current_time       #SCNT
 
 ;==============================================================================
-; Set up environment and targets
+; Set up environment, targets, and skill status menu
 ;==============================================================================
 GoSub SetupSkillsHeals
 GoSub ShowInitMenu
@@ -52,25 +52,18 @@ GoSub ShowStatusMenu
 GoSub UpdateSkills            %config_combat_skill tactics healing magery lumberjacking
 GoSub UpdateStatusMenuSkills  start now
 
-;    GoSub SkillMonitor %config_combat_skillShort anat tact heal mage lumb
-;    GoSub StartSkillsToMenu
-;    GoSub SkillMonitor %config_combat_skillShort anat tact heal mage lumb
-;    GoSub SkillsGainAndNowToMenu
-;    GoSub Heal
-;    GoSub HealSelf
-;    GoSub InitTitlebar
-;    GoSub Attack
-;    GoSub InfoText disable
-
-
 ;==============================================================================
 ; Main Event Loop
 ;==============================================================================
 MainLoop:
-    Wait 1s
+    Wait 10
+    
+    GoSub HandleStatusMenuButtons
+    
     Set %count_current_time #SCNT
     GoSub UpdateSkills            %config_combat_skill tactics healing magery lumberjacking
     GoSub UpdateStatusMenuSkills  now gain perhour
+    
     Goto MainLoop
 
 ;==============================================================================
@@ -83,7 +76,7 @@ Sub SetupSkillsHeals
     ; Wait for user response
     MENU_SKILL_HEAL_WAIT:
         Wait 1
-        If #MenuBUTTON <> Start
+        If #MENUBUTTON <> Start
             Goto MENU_SKILL_HEAL_WAIT
 
         Menu Get menu_select_combat_skill
@@ -112,7 +105,7 @@ Sub SetupSkillsHeals
         If #MENURES = 2 
             Set %config_healing_method magery     
 
-        Set #MenuBUTTON N/A
+        Set #MENUBUTTON N/A
     Return
 
 ;==============================================================================
@@ -147,7 +140,7 @@ Sub SetupTargets
     Set %config_combatant_count 0
     If %config_combat_skill <> none
     {
-        GoSub UpdateInitMenuText      Choosing combatants...
+        GoSub UpdateInitMenuText      Choose combatants (choose self last)...
         GoSub GetParticipantIDs       combatants #FALSE
         Set %config_combatant_count   #RESULT
     }
@@ -156,7 +149,7 @@ Sub SetupTargets
     Set %config_healees_count 0
     If %config_healing_method <> none
     {
-        GoSub UpdateInitMenuText      Choosing healing targets...
+        GoSub UpdateInitMenuText      Choose healing targets (choose self last)...
         GoSub GetParticipantIDs       healees #TRUE
         Set %config_healees_count     #RESULT
     }
@@ -276,7 +269,7 @@ Sub SetupWeapon
                 SET #RHANDID #FINDID
                 Event Macro 24 2            ; Arm/Disarm Right
             }
-            Wait %DisarmDelay
+            Wait %delay_disarm
             Goto CheckIfArmed
         }
         If #FINDKIND = -1
@@ -401,9 +394,9 @@ Sub ShowStatusMenu
     
     Menu Font Align Center
     Menu Text menu_column_skill_start_label           250 52    Start:
-    Menu Text menu_column_skill_gain_label            290 52    Gain:
-    Menu Text menu_column_skill_now_label             350 52    Now:
-    Menu Text menu_column_skill_perhour_label         395 52    /h
+    Menu Text menu_column_skill_gain_label            310 52    Gain:
+    Menu Text menu_column_skill_now_label             370 52    Now:
+    Menu Text menu_column_skill_perhour_label         425 52    /h
     
     Menu Font Align Right
     Menu Text menu_ , %config_combat_skill , _label   250 72    %config_combat_skill :
@@ -442,13 +435,15 @@ Sub ShowStatusMenu
     Menu Text menu_tactics_now                        395 112   0
     Menu Text menu_tactics_inhour                     440 112   0
    
-   ;Menu Font Color WindowText
-   ;Menu Font BGColor Red
-   ;Menu Button panic 8 12 113 73 PANIC
-   ;Menu Font Size 12
-   ;Menu Font Color Silver
-   ;Menu Font BGColor Background
-   ;Menu Button Exit 8 220 169 41 EXIT
+    Menu Font Color WindowText
+    Menu Font BGColor Red
+    Menu Button panic 8 12 113 73 PANIC
+    
+    Menu Font Size 12
+    Menu Font Color Silver
+    Menu Font BGColor Background
+    Menu Button Exit 8 100 113 73 EXIT
+   
    ;Menu Font Size 8
     
    ;If %config_combat_skill = archery
@@ -463,7 +458,6 @@ Sub ShowStatusMenu
     Menu Show 500 500
     
     Set #LPC 10
-    
     Return
 
 ;==============================================================================
@@ -523,127 +517,217 @@ Sub UpdateStatusMenuSkills
     Set #LPC 10
     Return
     
-;==========================
-;***** HEAL Sparring dude  
-;==========================
-Sub Heal
+;==============================================================================
+; Handle menu buttons
+;==============================================================================
+SUB HandleStatusMenuButtons
+   ;Menu GetNum edit_1 %thresh_heal
+   ;If #MENURES <> %thresh_heal
+   ;SET %thresh_heal #MENURES
+   ;
+   ;Menu GetNum edit_2 %thresh_disarm
+   ;If #MENURES <> %thresh_disarm
+   ;SET %thresh_disarm #MENURES
+   ;
+   ;Menu GetNum edit_1 %thresh_rearm
+   ;If #MENURES <> %thresh_rearm
+   ;SET %thresh_rearm #MENURES
+    
+    
+    If #MENUBUTTON = panic
+    {
+        panic:
+        If %config_combat_skill = lumberjacking
+        {
+            Event Macro 24 1
+        }
+        Else
+        {
+            Event Macro 24 2
+        }
+        Wait %delay_disarm
+       ;SET *903 yes
+        SET #MENUBUTTON = N/A
+    }
+    
+    If #MENUBUTTON = exit
+    {
+        If %config_combat_skill = lumberjacking
+        {
+            Event Macro 24 1
+        }
+        Else
+        {
+            Event Macro 24 2
+        }
+        Wait %delay_disarm
+       ;MSG All Guard Me$ ; just to be sure that dude will not kill us :D
+        Menu Clear
+        Menu Hide
+        Halt
+    }
+    
+    If #MENUBUTTON = arrows
+    {
+        SET #MENUBUTTON = N/A
+        paperdollLoop2:
+        Event Macro 9 1
+        Wait 20
+        Event Macro 8 1
+        Wait 10
+        SET #CONTPOSX 800
+        Wait 20
+        SET #CONTPOSY 0
+        Wait 20
+        
+        If #CONTNAME = paperdoll_gump
+        {
+            SET %config_paperdoll_id #CONTID
+            Goto OutFromPaperdollLoop2
+        }
+        Goto paperdollLoop2
+        OutFromPaperdollLoop2:
+        
+        
+        
+        Arrowloop:
+        FindItem RWF G_2
+        If #FINDKIND <> -1
+        {
+            EVENT DRAG #FINDID
+            Wait 20
+            If #FINDSTACK >= 2
+            {
+                MSG $
+                Wait 10
+                CLICK 940 220
+            }
+        }
+        Else
+        {
+            CLICK 940 220
+            Wait 5
+        }
+        Goto Arrowloop
+    }
+    Return
+    
+;==============================================================================
+; Heal a combatant
+;==============================================================================
+Sub HealCombatant
     If #ENEMYHITS <= %thresh_heal
     {
     HealAgain:
-    If %config_healing_method = magery
-    {
-    If #MANA >= 11
-    {
-    Event Macro 15 28
-    SET #LTARGETID %SparringDudeId
-    TARGET
-    Event Macro 22 0
-    }
-    Else
-    {
-    SET *903 yes
-    }
-    }
-    If %config_healing_method = bandaid
-    {
-    FindItem ZLF C_ , %config_backpack_id
-    If #FINDKIND <> -1
-    {
-    SET #LOBJECTID #FINDID
-    SET #LTARGETID %SparringDudeID
-    Event Macro 17 0
-    TARGET
-    Event Macro 22 0
-    Wait %HealDudeDelay
-    SET %bandaidsUsed %bandaidsUsed + 1
-    If #ENEMYHITS <= %thresh_heal
-    GotoHealAgain:
-    }
-    If #FINDKIND = -1
-    {
-    Display OK You are out of bandaids!$
-    + Go get some more and press start when ready$
-    PAUSE
-    }
-    }
+        If %config_healing_method = magery
+        {
+            If #MANA >= 11
+            {
+                Event Macro 15 28
+                SET #LTARGETID %SparringDudeId
+                TARGET
+                Event Macro 22 0
+            }
+            Else
+            {
+                SET *903 yes
+            }
+        }
+        If %config_healing_method = bandaid
+        {
+            FindItem ZLF C_ , %config_backpack_id
+            If #FINDKIND <> -1
+            {
+                SET #LOBJECTID #FINDID
+                SET #LTARGETID %SparringDudeID
+                Event Macro 17 0
+                TARGET
+                Event Macro 22 0
+                Wait %HealDudeDelay
+                SET %bandaidsUsed %bandaidsUsed + 1
+                If #ENEMYHITS <= %thresh_heal
+                    Goto HealAgain
+            }
+            If #FINDKIND = -1
+            {
+                Display OK You are out of bandaids!$
+                + Go get some more and press start when ready$
+                PAUSE
+            }
+        }
     }
     HealDudeWait:
     Return
 
-;==========================
-; ***** HEAL You
-;==========================
+;==============================================================================
+; Heal yoself
+;==============================================================================
+Sub HealSelf
+    If #HITS <= 50
+    {
+        If %config_healing_method = magery
+        {
+            If #MANA > 11
+            {
+                Event Macro 15 28
+                TARGET
+                Event Macro 23 0
+            }
+        }
+        
+        
+        If %config_healing_method = bandaid
+        {
+            FindItem ZLF C_ , %config_backpack_id
+            If #FINDKIND <> -1
+            {
+                SET #LOBJECTID #FINDID
+                Event Macro 17 0
+                TARGET
+                Event Macro 23 0
+                Wait %HealSelfDelay
+                SET %bandaidsUsed %bandaidsUsed + 1
+            }
+            
+            If #FINDKIND = -1
+            {
+                Display OK You are out of bandaids!$
+                + Go get some more and press start when ready$
+                PAUSE
+            }
+            
+        }
+    }
+    Return
 
-SUB HealSelf
-If #HITS <= 50
-{
-If %config_healing_method = magery
-{
-If #MANA > 11
-{
-Event Macro 15 28
-TARGET
-Event Macro 23 0
-}
-}
-
-
-If %config_healing_method = bandaid
-{
-FindItem ZLF C_ , %config_backpack_id
-If #FINDKIND <> -1
-{
-SET #LOBJECTID #FINDID
-Event Macro 17 0
-TARGET
-Event Macro 23 0
-Wait %HealSelfDelay
-SET %bandaidsUsed %bandaidsUsed + 1
-}
-
-If #FINDKIND = -1
-{
-Display OK You are out of bandaids!$
-+ Go get some more and press start when ready$
-PAUSE
-}
-
-}
-}
-Return
-
-
-;==========================
-;***** Attack Tha DUDE  
-;==========================
-
-SUB Attack
-
-FindItem %SparringDudeID
-If #FINDKIND <> -1
-{
-SET #LTARGETID %SparringDudeID
-MSG #smc All Follow Me$
-Wait 10
-MSG #smc All Guard Me$
-Wait 10
-Event Macro 27 0
-Wait 10
-MSG #smc All Follow Me$
-Wait 10
-MSG #smc All Guard Me$
-Wait 10
-MSG #smc All Guard Me$
-Wait 10
-}
-Else
-{
-Display Ok Im sorry but, your Dude is dead$
-+ Hire new and press start when you are ready$
-PAUSE
-}
-
-Return
+;==============================================================================
+; Attack a combatant
+;==============================================================================
+Sub AttackCombatant
+    FindItem %SparringDudeID
+    If #FINDKIND <> -1
+    {
+        Set #LTARGETID %SparringDudeID
+        MSG #smc All Follow Me$
+        Wait 10
+        MSG #smc All Guard Me$
+        Wait 10
+        Event Macro 27 0
+        Wait 10
+        MSG #smc All Follow Me$
+        Wait 10
+        MSG #smc All Guard Me$
+        Wait 10
+        MSG #smc All Guard Me$
+        Wait 10
+    }
+    Else
+    {
+        Display Ok Im sorry but, your Dude is dead$
+        + Hire new and press start when you are ready$
+        PAUSE
+    }
+    Return
 
 ;==========================
 ;*****  Disarms If needed   
@@ -663,7 +747,7 @@ Else
 {
 Event Macro 24 2
 }
-Wait %DisarmDelay
+Wait %delay_disarm
 set *903 yes
 }
 }
@@ -680,108 +764,11 @@ Else
 {
 Event Macro 24 2
 }
-Wait %DisarmDelay
+Wait %delay_disarm
 set *903 no
 }
 }
 
 Return
 
-;===============================================
-;******** Checks If somebutton is pressed
-;===============================================
 
-SUB CheckMenuButtons
-
-
-Menu GetNum edit_1 %thresh_heal
-If #MENURES <> %thresh_heal
-SET %thresh_heal #MENURES
-
-Menu GetNum edit_2 %thresh_disarm
-If #MENURES <> %thresh_disarm
-SET %thresh_disarm #MENURES
-
-Menu GetNum edit_1 %thresh_rearm
-If #MENURES <> %thresh_rearm
-SET %thresh_rearm #MENURES
-
-
-If #MenuBUTTON = panic
-{
-panic:
-If %config_combat_skill = lumberjacking
-{
-Event Macro 24 1
-}
-Else
-{
-Event Macro 24 2
-}
-Wait %DisarmDelay
-SET *903 yes
-SET #MenuBUTTON = N/A
-}
-
-
-If #MenuBUTTON = exit
-{
-If %config_combat_skill = lumberjacking
-{
-Event Macro 24 1
-}
-Else
-{
-Event Macro 24 2
-}
-Wait %DisarmDelay
-MSG All Guard Me$ ; just to be sure that dude will not kill us :D
-HALT
-}
-
-If #MenuBUTTON = arrows
-{
-SET #MenuBUTTON = N/A
-paperdollLoop2:
-Event Macro 9 1
-Wait 20
-Event Macro 8 1
-Wait 10
-SET #CONTPOSX 800
-Wait 20
-SET #CONTPOSY 0
-Wait 20
-
-If #CONTNAME = paperdoll_gump
-{
-SET %config_paperdoll_id #CONTID
-Goto OutFromPaperdollLoop2
-}
-Goto paperdollLoop2
-OutFromPaperdollLoop2:
-
-
-
-Arrowloop:
-FindItem RWF G_2
-If #FINDKIND <> -1
-{
-EVENT DRAG #FINDID
-Wait 20
-If #FINDSTACK >= 2
-{
-MSG $
-Wait 10
-CLICK 940 220
-}
-Else
-{
-CLICK 940 220
-Wait 5
-}
-Goto Arrowloop
-}
-
-}
-
-Return
