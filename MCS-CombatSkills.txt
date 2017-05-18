@@ -58,7 +58,7 @@ GoSub UpdateStatusMenuSkills  start now                     ; Update current and
 MainLoop:
     GoSub HandleStatusMenuButtons                           ; Check for button presses
     
-    ; Update participant stats
+    GoSub GetParticipantStatus    combatants                ; Update participant stats
     GoSub SortObjects             combatants HP #FALSE      ; Sort combatants by HP, descending
     GoSub SortObjects             healees    HP #TRUE       ; Sort healees by HP, ascending
     
@@ -163,14 +163,14 @@ Sub SetupTargets
 ; Open containers and gather/verify ID
 ;==============================================================================
 Sub GetContainerID
-    FIND_CONT_ID:
-        Event Macro %1 %2
-        Wait 10
+FIND_CONT_ID:
+    Event Macro %1 %2
+    Wait 10
 
-        If #CONTNAME = %3
-            Return #CONTID
-        
-        Goto FIND_CONT_ID
+    If #CONTNAME = %3
+        Return #CONTID
+    
+    Goto FIND_CONT_ID
         
 ;==============================================================================
 ; Create namespaces for participants 
@@ -184,32 +184,31 @@ Sub GetParticipantIDs
     Wait 10
     While #LTARGETID <> #CHARID
     {
+        Set %i %i + 1                  ; Pre-increment for one-based indicies
+        
         ; Target participants
         Set #TARGCURS 1
-        TARGLOOP:
-            If #TARGCURS = 1
-        goto TARGLOOP
-        
-        Click #CURSORX #CURSORY g  
-        Click #CURSORX #CURSORY p  
-        WaitForContID:
-            Wait 1
-            If #CONTID <> #LTARGETID 
-                Goto WaitForContID              
+    TARGLOOP:
+        If #TARGCURS = 1
+          goto TARGLOOP
+
+        ; Save Gump location          
+        Set %click_x #CURSORX
+        Set %click_y #CURSORY
         
         ; Exit here if including self is not desired
         If #LTARGETID = #CHARID && %2 = #FALSE
             break
-           
-        
         
         ; Create a dedicated namespace for this ID
         Set %ns   ns_ , %1 
         Set %nsid %ns , _ , %i
         Namespace Local %nsid
-        Set !id   #LTARGETID           ; Set object ID
-        Event Property #LTARGETID      ; Query object NAME
-        Set !name #PROPERTY            ; Set object NAME
+        Set !id           #LTARGETID           ; Set object ID
+        Event Property    #LTARGETID           ; Query object NAME
+        Set !name         #PROPERTY            ; Set object NAME
+        Set !statgump_x   %click_x             ; Save X coord of status gump
+        Set !statgump_y   %click_y             ; Save Y coord of status gump
         Namespace Local STD
         
         ; Create a default order for this ID 
@@ -217,9 +216,34 @@ Sub GetParticipantIDs
         Set !order . %i %i 
         Namespace Local std 
         
-        Set %i %i + 1
+
     }    
-    Return %i
+    Return %i - 1                      ; Return a one-based count
+    
+;==============================================================================
+; Create namespaces for participants 
+;
+; %1 - Name token for namespace
+;
+;==============================================================================
+Sub GetParticipantStatus
+    Set %tmp     config_ , %1 , _count    ; Construct count varname
+    Set %cnt     % . %tmp                 ; Number of items to sort
+    Set %ns      ns_ , %1                 ; Construct namespace name
+    
+    ; Count over each participant in the namespace
+    for %i 1 %cnt
+    {
+        Set %nsid %ns , _ , %i
+        Namespace Local %nsid
+        
+        Wait 10
+        Click !statgump_x !statgump_y g dmc
+        Click !statgump_x !statgump_y p dmc
+        Wait 10
+        Event SysMessage !name , #SPC , #CONTHP
+    }
+    Return
     
 ;==============================================================================
 ; Sort objects based on given attribute
@@ -428,19 +452,19 @@ Sub ShowSkillsHealsSelectionMenu
     Menu Font BGcolor Window
     Menu Font Align Left
     
-    Menu Text menu_select_combat_skill_label    50  30 Combat Skill:
-    Menu Combo Create menu_select_combat_skill  200 30 150
-    Menu Combo Add    menu_select_combat_skill  Archery
-    Menu Combo Add    menu_select_combat_skill  Fencing
-    Menu Combo Add    menu_select_combat_skill  Swordsmanship
-    Menu Combo Add    menu_select_combat_skill  Mace Fighting
-    Menu Combo Add    menu_select_combat_skill  Wrestling
-    Menu Combo Add    menu_select_combat_skill  Lumberjacking
-    
-    Menu Text menu_select_heal_method_label     50  60 Heal Method:
-    Menu Combo Create menu_select_heal_method   200 60 150
-    Menu Combo Add    menu_select_heal_method   Bandaids
-    Menu Combo Add    menu_select_heal_method   Magery
+    Menu Text menu_select_combat_skill_label          50  30 Combat Skill:
+    Menu Combo Create menu_select_combat_skill        200 30 150
+    Menu Combo Add    menu_select_combat_skill        Archery
+    Menu Combo Add    menu_select_combat_skill        Fencing
+    Menu Combo Add    menu_select_combat_skill        Swordsmanship
+    Menu Combo Add    menu_select_combat_skill        Mace Fighting
+    Menu Combo Add    menu_select_combat_skill        Wrestling
+    Menu Combo Add    menu_select_combat_skill        Lumberjacking
+             
+    Menu Text menu_select_heal_method_label           50  60 Heal Method:
+    Menu Combo Create menu_select_heal_method         200 60 150
+    Menu Combo Add    menu_select_heal_method         Bandaids
+    Menu Combo Add    menu_select_heal_method         Magery
 
     Menu Button Start 200 120 120 30 Start
     Menu Show 500 500
@@ -465,7 +489,7 @@ Sub ShowInitMenu
     Menu Font BGcolor Window
     Menu Font Align Left
     
-    Menu Text menu_status_text 50 15 Initializing...
+    Menu Text menu_status_text                        50 15 Initializing...
     Return
 
 ;==============================================================================
