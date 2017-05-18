@@ -7,7 +7,7 @@ InitEvents                    ; Initialize Macro Events
 ; Menu Strings
 ;------------------------------------------------------------------------------
 Set %menu_version_title       [YO] , #SPC , Weapon , #SPC , Skills , #SPC , Suite , #SPC , v0.1
-Set %menu_update_delay        1s
+Set %menu_update_delay        20
 
 ;------------------------------------------------------------------------------
 ; Weapon type IDs
@@ -50,19 +50,22 @@ GoSub SetupWeapon
 GoSub SetupTargets
 GoSub ShowStatusMenu
 GoSub UpdateSkills            %config_combat_skill tactics healing magery lumberjacking
-GoSub UpdateStatusMenuSkills  start now
+GoSub UpdateStatusMenuSkills  start now                     ; Update current and baseline skill amts
 
 ;==============================================================================
 ; Main Event Loop
 ;==============================================================================
 MainLoop:
-    Wait 10
+    GoSub HandleStatusMenuButtons                           ; Check for button presses
     
-    GoSub HandleStatusMenuButtons
+    ; Update participant stats
+    GoSub SortObjects             combatants HP #FALSE      ; Sort combatants by HP, descending
+    GoSub SortObjects             healees    HP #TRUE       ; Sort healees by HP, ascending
     
-    Set %count_current_time #SCNT
+    Set   %count_current_time     #SCNT                     ; Update time for this tick
+    
     GoSub UpdateSkills            %config_combat_skill tactics healing magery lumberjacking
-    GoSub UpdateStatusMenuSkills  now gain perhour
+    GoSub UpdateStatusMenuSkills  now gain perhour          ; Update current skill amt, calc stats
     
     Goto MainLoop
 
@@ -137,12 +140,12 @@ Sub SetupGumps
 ;==============================================================================
 Sub SetupTargets
     ; Set combat targets 
-    Set %config_combatant_count 0
+    Set %config_combatants_count 0
     If %config_combat_skill <> none
     {
         GoSub UpdateInitMenuText      Choose combatants (choose self last)...
         GoSub GetParticipantIDs       combatants #FALSE
-        Set %config_combatant_count   #RESULT
+        Set %config_combatants_count  #RESULT
     }
     
     ; Set healing targets 
@@ -186,20 +189,130 @@ Sub GetParticipantIDs
         TARGLOOP:
             If #TARGCURS = 1
         goto TARGLOOP
-        Wait 10
+        
+        Click #CURSORX #CURSORY g  
+        Click #CURSORX #CURSORY p  
+        WaitForContID:
+            Wait 1
+            If #CONTID <> #LTARGETID 
+                Goto WaitForContID              
         
         ; Exit here if including self is not desired
         If #LTARGETID = #CHARID && %2 = #FALSE
             break
-            
+           
+        
+        
         ; Create a dedicated namespace for this ID
-        Set %ns ns_ , %1 , %i
-        Namespace Local %ns
-        Set !id #LTARGETID
+        Set %ns   ns_ , %1 
+        Set %nsid %ns , _ , %i
+        Namespace Local %nsid
+        Set !id   #LTARGETID           ; Set object ID
+        Event Property #LTARGETID      ; Query object NAME
+        Set !name #PROPERTY            ; Set object NAME
         Namespace Local STD
+        
+        ; Create a default order for this ID 
+        Namespace Local %ns
+        Set !order . %i %i 
+        Namespace Local std 
+        
         Set %i %i + 1
     }    
     Return %i
+    
+;==============================================================================
+; Sort objects based on given attribute
+;
+; %1 - Collection type Token for choosing namespace
+; %2 - Property to sort by
+; %3 - Sort Descending(True)/Ascending(False)
+;
+; Assumptions:
+;
+; - Object count is in %config_<collection_type>_count
+; - Namespace ns_<collection_type> exists and contains !order[1..N] variables
+;   that describe the order for the object instances.
+; - Namespace ns_<collection_type>_[1..N] exist and contain the properties for
+;   each object instance.
+;
+;==============================================================================
+Sub SortObjects
+    #LPC 1000
+    Set %ns   ns_ , %1
+    Set %prop %2
+    
+    ;
+    ; for i = 1 to length(A)
+    ;     j = i
+    ;     while j > 0 and A[j-1] > A[j]
+    ;         swap A[j] and A[j-1]
+    ;         j = j - 1
+    ;     end while
+    ; end for
+    ;
+    Set %tmp     config_ , %1 , _count    ; Construct count varname
+    Set %cnt     % . %tmp                 ; Number of items to sort
+    Set %coeff   ( %3 * 2 ) + 1           ; Map TRUE/FALSE to +1/-1
+    for %i 2 %cnt
+    {
+        ; Set up order indicies
+        Set %j    %i
+        Set %jm1  %j - 1
+
+        ; Get the ID of the %j-th and %jm1th sorted
+        ; object, and read the property we
+        ; wish to sort by from each
+        Namespace Local %ns
+        Set %jid      !order . %j
+        Set %jm1id    !order . %jm1
+        
+        Set %nsjid    %ns , _ , %jid
+        Namespace Local %nsjid
+        Set %aj       ! . %prop
+
+        Set %nsjm1id  %ns , _ , %jm1id
+        Namespace Local %nsjm1id
+        Set %ajm1     ! . %prop
+
+        ; If the objects are out of order, swap
+        while ( %j >= 2 ) && ( ( %coeff * %ajm1 ) > ( %coeff * %aj ) )
+        {
+            ; Swap %j-1-th and %j-th orders
+            Namespace Local %ns
+            Set %tmp           !order . %j
+            Set !order . %j    !order . %jm1
+            Set !order . %jm1  %tmp
+
+            ; Decrement j , update jm1
+            Set %j    %j - 1
+            ; Test %j for loop exit
+            If %j < 2
+               break
+            ; Loop continues, set up test variables for
+            ; next iteration
+            Set %jm1  %j - 1
+            
+            ; update A[j] and A[j-1] test values
+            ; Get the ID of the %j-th and %jm1th sorted
+            ; object, and read the property we
+            ; wish to sort by from each
+            Namespace Local %ns
+            Set %jid      !order . %j
+            Set %jm1id    !order . %jm1
+            
+            Set %nsjid    %ns , _ , %jid
+            Namespace Local %nsjid
+            Set %aj       ! . %prop
+    
+            Set %nsjm1id  %ns , _ , %jm1id
+            Namespace Local %nsjm1id
+            Set %ajm1     ! . %prop
+        }
+    }
+    Namespace Local std
+    #LPC 10
+    Return
 
 ;==============================================================================
 ; Setup combat skill sparring weapon
@@ -234,7 +347,7 @@ Sub SetupWeapon
             FindItem %itid_axe_weapons      C_ , %config_paperdoll_id
 
         GoSub UpdateInitMenuText        Checking weapon...
-        Wait 1s
+        Wait 10
         If #FINDKIND <> -1
         {
             GoSub UpdateInitMenuText Weapon , #SPC , #FINDID , #SPC , is equipped and suitable for , #SPC , %config_combat_skill 
@@ -373,7 +486,7 @@ Sub UpdateInitMenuText
 ; Show sparring status Menu
 ;==============================================================================
 Sub ShowStatusMenu
-    Set %menu_height 280 + 30 * %config_combatant_count
+    Set %menu_height 280 + 30 * %config_combatants_count
     
     Set #LPC 100
     
@@ -437,24 +550,25 @@ Sub ShowStatusMenu
    
     Menu Font Color WindowText
     Menu Font BGColor Red
-    Menu Button panic 8 12 113 73 PANIC
+    Menu Button menu_button_panic                     8 10  100 45 PANIC
     
-    Menu Font Size 12
+    Menu Font Color WindowText
+    Menu Font BGColor Green
+    Menu Button menu_button_resume                    8 65  100 45 Resume
+    
     Menu Font Color Silver
     Menu Font BGColor Background
-    Menu Button Exit 8 100 113 73 EXIT
+    Menu Button menu_button_exit                      8 120 100 45 EXIT
    
-   ;Menu Font Size 8
-    
+    Menu Font Size 6
    ;If %config_combat_skill = archery
-   ;    Menu Button arrows 8 104 169 41 Collect arrows/bolts
+    If #TRUE
+    {
+        Menu Font Color WindowText
+        Menu Font BGColor Gray
+        Menu Button menu_button_arrows                8 175 100 45 Collect arrows/bolts 
+    }
     
-   ;Menu Edit edit_1 8  150 35  %thresh_heal
-   ;Menu Edit edit_2 8  170 35  %thresh_disarm
-   ;Menu Edit edit_3 8  190 35  %thresh_rearm
-   ;Menu text heal      45 150  HealDude!
-   ;Menu text disarm    45 170  Disarm
-   ;Menu text rearm     45 190  Rearm
     Menu Show 500 500
     
     Set #LPC 10
@@ -518,23 +632,10 @@ Sub UpdateStatusMenuSkills
     Return
     
 ;==============================================================================
-; Handle menu buttons
+; Handle status menu buttons
 ;==============================================================================
 SUB HandleStatusMenuButtons
-   ;Menu GetNum edit_1 %thresh_heal
-   ;If #MENURES <> %thresh_heal
-   ;SET %thresh_heal #MENURES
-   ;
-   ;Menu GetNum edit_2 %thresh_disarm
-   ;If #MENURES <> %thresh_disarm
-   ;SET %thresh_disarm #MENURES
-   ;
-   ;Menu GetNum edit_1 %thresh_rearm
-   ;If #MENURES <> %thresh_rearm
-   ;SET %thresh_rearm #MENURES
-    
-    
-    If #MENUBUTTON = panic
+    If #MENUBUTTON = menu_button_panic
     {
         panic:
         If %config_combat_skill = lumberjacking
@@ -550,7 +651,7 @@ SUB HandleStatusMenuButtons
         SET #MENUBUTTON = N/A
     }
     
-    If #MENUBUTTON = exit
+    If #MENUBUTTON = menu_button_exit
     {
         If %config_combat_skill = lumberjacking
         {
@@ -567,22 +668,22 @@ SUB HandleStatusMenuButtons
         Halt
     }
     
-    If #MENUBUTTON = arrows
+    If #MENUBUTTON = menu_button_arrows
     {
-        SET #MENUBUTTON = N/A
+        Set #MENUBUTTON = N/A
         paperdollLoop2:
         Event Macro 9 1
         Wait 20
         Event Macro 8 1
         Wait 10
-        SET #CONTPOSX 800
+        Set #CONTPOSX 800
         Wait 20
-        SET #CONTPOSY 0
+        Set #CONTPOSY 0
         Wait 20
         
         If #CONTNAME = paperdoll_gump
         {
-            SET %config_paperdoll_id #CONTID
+            Set %config_paperdoll_id #CONTID
             Goto OutFromPaperdollLoop2
         }
         Goto paperdollLoop2
