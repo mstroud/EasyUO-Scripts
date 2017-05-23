@@ -21,6 +21,7 @@ Sub Initialize
     Set %ArmorBag DTNDOMD
 
     Set %Timer #Time
+    Set %HealTimer Nothing
     Set %ArmorTrigger #False
     Set %CheckArmorDelay 120
 
@@ -29,6 +30,10 @@ Sub Initialize
 
     Menu Set Status2 Opening Paperdoll ...
     Event Macro 8 1
+    Wait %LongDelay
+    
+    Menu Set Status2 Opening Character Status ...
+    Event Macro 8 2
     Wait %LongDelay
 
     Menu Set Status2 Opening Stock Container ...
@@ -89,7 +94,7 @@ Sub TabCombat
     Return
 
 Sub CheckSysMsg
-    If You_apply_the_bandages in #SysMsg || You_finish_applying in #SysMsg
+    If You_apply_the_bandages in #SysMsg || You_finish in #SysMsg || #Time >= %HealTimer
         Set %HealTrigger #True
     Return
 
@@ -117,6 +122,7 @@ Sub Heal
     FindItem %Aides C_ , #BackpackID
     Set #LObjectID #FindID
     Menu Set Status2 Healing #CharName
+    Set %HealTimer ( #Time + 10 )
     Set %HealTrigger #False
     Event Macro 17 0
     Wait %MedDelay
