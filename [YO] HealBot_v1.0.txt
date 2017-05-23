@@ -1,0 +1,240 @@
+GoSub Initialize
+
+Mainloop:
+    GoSub TabCombat
+    GoSub CheckSysMsg
+    GoSub CheckHP
+    GoSub CheckTime
+    If %ArmorTrigger = #True
+        GoSub CheckArmor
+    Goto Mainloop
+    
+Sub Initialize
+    GoSub CreateStatusMenu
+    Menu Set Status1 [YO] HealBot Suite_v1.0
+    Menu Set Status2 Initializing Global Variables ...
+    Set %ShortDelay 5
+    Set %MedDelay 10
+    Set %LongDelay 15
+
+    Set %StockContainer VNHVNMD
+    Set %ArmorBag DTNDOMD
+
+    Set %Timer #Time
+    Set %ArmorTrigger #False
+    Set %CheckArmorDelay 120
+
+    Set %HealTrigger #True
+    Set %Aides ZLF
+
+    Menu Set Status2 Opening Paperdoll ...
+    Event Macro 8 1
+    Wait %LongDelay
+
+    Menu Set Status2 Opening Stock Container ...
+    Set #LObjectID %StockContainer
+    Event Macro 17 0
+    Wait %LongDelay
+    
+    Menu Set Status2 Opening Armor Bag ...
+    Set #LObjectID %ArmorBag
+    Event Macro 17 0
+    Wait %LongDelay
+
+    GoSub CheckArmor
+    Return
+
+Sub CreateStatusMenu
+    Menu Clear
+    Menu Window Size 360 80
+    Menu Image Create BG 0 0 360 80
+    Menu Window Title [YO] Status Window
+
+    Menu Font Size 12
+    Menu Font Align Right
+    Menu Font Style b
+    Menu Font Color Black
+    Menu Text StatusLabel 70 5 Activity:
+
+    Menu Font Size 12
+    Menu Font Align Left
+    Menu Font Style b i
+    Menu Font Color Blue
+    Menu Text Status1 75 5
+
+    Menu Font Size 12
+    Menu Font Align Right
+    Menu Font Style b
+    Menu Font Color Black
+    Menu Text StatusLabel 70 25 Status:
+
+    Menu Font Size 12
+    Menu Font Align Left
+    Menu Font Style b i
+    Menu Font Color Red
+    Menu Text Status2 75 25
+
+
+    Menu Image Line BG 5 50 355 50 Black 2
+    Menu Font Size 10
+    Menu Font Style
+    Menu Font Color Black
+    Menu Show
+    Return
+    
+Sub TabCombat
+    ;Menu Set Status2 Tabbing Combat ...
+    For %x 1 2
+        Event Macro 6 0
+    Return
+
+Sub CheckSysMsg
+    If You_apply_the_bandages in #SysMsg || You_finish_applying in #SysMsg
+        Set %HealTrigger #True
+    Return
+
+Sub CheckHP
+    Menu Set Status2 Checking HP: Currently #HITS / #MAXHITS ...
+    Set %HPTrigger ( #MAXHITS * 9 ) / 10
+    If #HITS <= %HPTrigger && %HealTrigger = #True
+        GoSub Heal
+    Return
+    
+Sub Heal
+    Menu Set Status2 Checking Bandages ...
+    FindItem %Aides C_ , #BackpackID
+    If #FindCnt = 0
+    {
+       Menu Set Status2 Low Bandages, Re-Stocking ...
+        FindItem %Aides G_3
+        If #FindStack <= 100
+            Event Macro 1 0 Runnin' low on aides...
+        ExEvent Drag #FindID 200
+        Wait %MedDelay
+        ExEvent DropC #BackpackID 400 400
+        Wait %MedDelay
+    }
+    FindItem %Aides C_ , #BackpackID
+    Set #LObjectID #FindID
+    Menu Set Status2 Healing #CharName
+    Set %HealTrigger #False
+    Event Macro 17 0
+    Wait %MedDelay
+    Event Macro 23 0
+    Wait %MedDelay
+    Return
+    
+Sub CheckArmor
+    Menu Set Status2 Checking Armor
+    Set %FullSuit DPH_ZOH_BMH_APH_CIK
+    Set %Helm DPH
+    Set %Chest ZOH
+    ;Set %Arms
+    Set %Gloves BMH
+    Set %Legs APH
+    Set %Shield CIK
+
+    Set %ArmorBag DTNDOMD
+    Set %MedDelay 10
+
+    FindItem %FullSuit C_ , #CharID
+    If #FindCnt <> 5
+    {
+        Menu Set Status2 Armor Missing ... Scanning ...
+        FindItem %Helm C_ , #CharID
+        If #FindCnt = 0
+        {
+            Menu Set Status2 Missing Helm ... Equiping ...
+            FindItem %Helm C_ , %ArmorBag
+            ExEvent Drag #FindID 1
+            Wait %MedDelay
+            ExEvent DropPD
+            Wait %MedDelay
+        }
+        Else
+            Menu Set Status2 Helm Found ...
+
+        FindItem %Chest C_ , #CharID
+        If #FindCnt = 0
+        {
+            Menu Set Status2 Missing Chest ... Equiping ...
+            FindItem %Chest C_ , %ArmorBag
+            ExEvent Drag #FindID 1
+            Wait %MedDelay
+            ExEvent DropPD
+            Wait %MedDelay
+        }
+        Else
+            Menu Set Status2 Chest Found ...
+
+        ;FindItem %Arms C_ , #CharID
+        ;If #FindCnt = 0
+        ;{
+        ;    Menu Set Status2 Missing Arms ... Equiping ...
+        ;    FindItem %Arms C_ , %ArmorBag
+        ;    ExEvent Drag #FindID 1
+        ;    Wait %MedDelay
+        ;    ExEvent DropPD
+        ;    Wait %MedDelay
+        ;}
+        ;Else
+        ;    Menu Set Status2 Arms Found ...
+
+        FindItem %Gloves C_ , #CharID
+        If #FindCnt = 0
+        {
+            Menu Set Status2 Missing Gloves ... Equiping ...
+            FindItem %Gloves C_ , %ArmorBag
+            ExEvent Drag #FindID 1
+            Wait %MedDelay
+            ExEvent DropPD
+            Wait %MedDelay
+        }
+        Else
+            Menu Set Status2 Gloves Found ...
+
+        FindItem %Legs C_ , #CharID
+        If #FindCnt = 0
+        {
+            Menu Set Status2 Missing Legs ... Equiping ...
+            FindItem %Legs C_ , %ArmorBag
+            ExEvent Drag #FindID 1
+            Wait %MedDelay
+            ExEvent DropPD
+            Wait %MedDelay
+        }
+        Else
+            Menu Set Status2 Legs Found ...
+
+        FindItem %Shield C_ , #CharID
+        If #FindCnt = 0
+        {
+            Menu Set Status2 Missing Shield ... Equiping ...
+            FindItem %Shield C_ , %ArmorBag
+            ExEvent Drag #FindID 1
+            Wait %MedDelay
+            ExEvent DropPD
+            Wait %MedDelay
+        }
+        Else
+            Menu Set Status2 Shield Found ...
+
+        Return
+    }
+    Else
+    {
+        Menu Set Status2 Armor Intact ...
+        Return
+    }
+    Return
+
+Sub CheckTime
+    Set %Trigger %Timer + %CheckArmorDelay
+    If #Time >= %Trigger
+    {
+        Set %ArmorTrigger #True
+        Set %Timer #Time
+    }
+    Else
+        Set %ArmorTrigger #False
+    Return

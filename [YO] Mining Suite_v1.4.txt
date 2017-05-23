@@ -15,16 +15,8 @@ Mainloop:
 
     Menu Get Options
     If #MenuRes = 1
-    {
-        Set %UsePackHorse #True
-        Set %UsePortForge #False
-    }
-    If #MenuRes = 2
-    {
-        Set %UsePackHorse #False
         Set %UsePortForge #True
-    }
-    
+
     If #menuButton = Mine
     {
         GoSub CreateStatusMenu
@@ -88,8 +80,6 @@ Mainloop:
         GoSub ConsolidateOre %AgapiteCol %AgapiteLabel
         GoSub ConsolidateOre %VeriteCol %VeriteLabel
         GoSub ConsolidateOre %ValoriteCol %ValoriteLabel
-        If %UsePackHorse = #True
-            GoSub LoadHorse
         Set #menuButton Nothing
         Menu Clear
         GoSub CreateMainMenu
@@ -104,184 +94,13 @@ Mainloop:
         Menu Clear
         GoSub CreateMainMenu
     }
-    If #menuButton = RareOre
-    {
-        GoSub CreateStatusMenu
-        GoSub PickupRareOre
-        Set #menuButton Nothing
-        Menu Clear
-        GoSub CreateMainMenu
-    }
 
-; ////////////////////////
-; //  Pack Animal Menu  //
-; ////////////////////////
-
-    If #menuButton = LoadHorse
-    {
-        GoSub CreateStatusMenu
-        GoSub LoadHorse
-        Set #menuButton Nothing
-        Menu Clear
-        GoSub CreateMainMenu
-    }
-    If #menuButton = Come
-    {
-        Event Macro 1 0 All Come
-        Set #menuButton Nothing
-    }
-    If #menuButton = Follow
-    {
-        Event Macro 1 0 All Follow Me
-        Set #menuButton Nothing
-    }
-    If #menuButton = Stay
-    {
-        Event Macro 1 0 All Stay
-        Set #menuButton Nothing
-    }
-
-; //////////////////////
-; //  Auto-Mine Menu  //
-; //////////////////////
-
-    If #menuButton = MineMinoc
-    {
-        GoSub CreateStatusMenu
-        GoSub MineMinoc
-        Set #menuButton Nothing
-        Menu Clear
-        GoSub CreateMainMenu
-    }
-    If #menuButton = RecallMinoc
-    {
-        GoSub CreateStatusMenu
-        GoSub Recall 4
-        Set #menuButton Nothing
-        Menu Clear
-        GoSub CreateMainMenu
-    }
-    If #menuButton = MineAvarice1
-    {
-        GoSub CreateStatusMenu
-        GoSub MineAvarice1
-        Set #menuButton Nothing
-        Menu Clear
-        GoSub CreateMainMenu
-    }
-    If #menuButton = RecallAvarice1
-    {
-        GoSub CreateStatusMenu
-        GoSub Recall 5
-        Set #menuButton Nothing
-        Menu Clear
-        GoSub CreateMainMenu
-    }
-    If #menuButton = MineAvarice2
-    {
-        GoSub CreateStatusMenu
-        GoSub MineAvarice2
-        Set #menuButton Nothing
-        Menu Clear
-        GoSub CreateMainMenu
-    }
-    If #menuButton = RecallAvarice2
-    {
-        GoSub CreateStatusMenu
-        GoSub Recall 6
-        Set #menuButton Nothing
-        Menu Clear
-        GoSub CreateMainMenu
-    }
-    If #menuButton = MineAvarice3
-    {
-        GoSub CreateStatusMenu
-        GoSub MineAvarice3
-        Set #menuButton Nothing
-        Menu Clear
-        GoSub CreateMainMenu
-    }
-    If #menuButton = RecallAvarice3
-    {
-        GoSub CreateStatusMenu
-        GoSub Recall 7
-        Set #menuButton Nothing
-        Menu Clear
-        GoSub CreateMainMenu
-    }
-    If #menuButton = MineAvarice4
-    {
-        GoSub CreateStatusMenu
-        GoSub MineAvarice4
-        Set #menuButton Nothing
-        Menu Clear
-        GoSub CreateMainMenu
-    }
-    If #menuButton = RecallAvarice4
-    {
-        GoSub CreateStatusMenu
-        GoSub Recall 8
-        Set #menuButton Nothing
-        Menu Clear
-        GoSub CreateMainMenu
-    }
     If #menuButton = Insanity
     {
         GoSub CreateStatusMenu
         GoSub Insanity
         Set #menuButton Nothing
         Menu Clear
-        GoSub CreateMainMenu
-    }
-
-; /////////////////////
-; //  Runebook Menu  //
-; /////////////////////
-
-    If RB in #MenuButton
-    {
-        If #MenuButton = RB1
-        {
-            GoSub CreateStatusMenu
-            GoSub Recall 1
-        }
-        If #MenuButton = RB2
-        {
-            GoSub CreateStatusMenu
-            GoSub Recall 2
-        }
-        If #MenuButton = RB3
-        {
-            GoSub CreateStatusMenu
-            GoSub Recall 3
-        }
-        If #MenuButton = RB4
-        {
-            GoSub CreateStatusMenu
-            GoSub Recall 4
-        }
-        If #MenuButton = RB5
-        {
-            GoSub CreateStatusMenu
-            GoSub Recall 5
-        }
-        If #MenuButton = RB6
-        {
-            GoSub CreateStatusMenu
-            GoSub Recall 6
-        }
-        If #MenuButton = RB7
-        {
-            GoSub CreateStatusMenu
-            GoSub Recall 7
-        }
-        If #MenuButton = RB8
-        {
-            GoSub CreateStatusMenu
-            GoSub Recall 8
-        }
-
-        Set #menuButton Nothing
         GoSub CreateMainMenu
     }
 
@@ -298,12 +117,7 @@ Mainloop:
 ; ////////////////////////////////////////////////////////////////
 
 Sub Initialize
-    Menu Clear
-    Menu Window Size 320 50
-    Menu Window Title [YO] Blacksmith Suite v1.0
-    Menu Text Status1 10 5
-    Menu Text Status2 10 25
-    Menu Show
+    GoSub CreateStatusMenu
 
     Menu Set Status1 Loading [YO] Mining Suite
     Menu Set Status2 Initializing Global Variables
@@ -312,9 +126,9 @@ Sub Initialize
     Set %LongDelay 15 ; Three-Quarters Second Delay
     Set %MiningTool QPF_TWF ; Pickaxe / Shovel Object Types
     Set %MiningToolCount 0 ; Init
-    Set %ToolBag UYOYKMD ; Mining Tool Container ID (Container for Ingots and Tools)
-    Set %RuneBag KHYZLMD ; Bag Containing Runebook
-    Set %BankIngotContainer FDWGMMD
+    Set %ToolBag CBRFPMD ; Mining Tool Container ID (Container for Ingots and Tools)
+    Set %RuneBag FBRFPMD ; Bag Containing Runebook
+    Set %BankIngotContainer MSEYOMD
 
     Set %UseProspector #True
     Set %ProspectorTool GBG
@@ -345,27 +159,25 @@ Sub Initialize
     Set %ValoriteCol 2219
     Set %ValoriteLabel Valorite
 
-    Set %PackHorse ZGFMMMD
-
     Menu Set Status2 Opening Backpack
     Set #LObjectID #BackpackID
     Event Macro 17 0 ; Open Main Backpack
-    Wait %MedDelay
-    ContPos 0 760
+    Wait %LongDelay
+    ContPos 830 475
     Wait %ShortDelay
-    
+
     Menu Set Status2 Opening Mining Container
     Set #LObjectID %ToolBag
     Event Macro 17 0
-    Wait %MedDelay
-    ContPos 220 775
+    Wait %LongDelay
+    ContPos 835 300
     Wait %ShortDelay
-
+    
     Menu Set Status2 Opening Runebook Container
     Set #LObjectID %RuneBag
     Event Macro 17 0 ; Open Mining Tool Bag
-    Wait %MedDelay
-    ContPos 395 610
+    Wait %LongDelay
+    ContPos 1040 400
     Wait %ShortDelay
     
     GoSub ToolInit
@@ -402,13 +214,41 @@ Sub ToolInit
 
 Sub CreateStatusMenu
     Menu Clear
-    Menu Window Size 320 95
-    Menu Window Title [YO] Blacksmith Suite v1.0
-    Menu Text Status1 10 5
-    Menu Text Status2 10 25
+    Menu Window Size 360 80
+    Menu Image Create BG 0 0 360 80
+    Menu Window Title [YO] Status Window
 
-    Menu Text MiningTools 10 50 Mining Tools: %MiningToolCount Remaining
-    Menu Text ProspectorTools 10 70 Prospector Tools: %ProspectorToolCount Remaining
+    Menu Font Size 12
+    Menu Font Align Right
+    Menu Font Style b
+    Menu Font Color Black
+    Menu Text StatusLabel 70 5 Activity:
+
+    Menu Font Size 12
+    Menu Font Align Left
+    Menu Font Style b i
+    Menu Font Color Blue
+    Menu Text Status1 75 5
+
+    Menu Font Size 12
+    Menu Font Align Right
+    Menu Font Style b
+    Menu Font Color Black
+    Menu Text StatusLabel 70 25 Status:
+
+    Menu Font Size 12
+    Menu Font Align Left
+    Menu Font Style b i
+    Menu Font Color Red
+    Menu Text Status2 75 25
+
+
+    Menu Image Line BG 5 50 355 50 Black 2
+    Menu Font Size 10
+    Menu Font Style
+    Menu Font Color Black
+    Menu Text MiningTools 10 55 Mining Tools: %MiningToolCount
+    Menu Text ProspectorTools 185 55 Prospector Tools: %ProspectorToolCount
     Menu Show
     Return
 
@@ -442,31 +282,11 @@ Sub CreateMainMenu
     Set %MiningMenuRow2 %MiningMenuRow1 + 20
     Set %MiningMenuRow3 %MiningMenuRow2 + 25
 
-    Set %PackAnimalMenuRow1 %MiningMenuRow3 + 40
-    Set %PackAnimalMenuRow2 %PackAnimalMenuRow1 + 20
+    Set %Insanity %MiningMenuRow3 + 45
 
-    Set %AutoMineMenuRow1 %PackAnimalMenuRow2 + 40
-    Set %AutoMineMenuRow2 %AutoMineMenuRow1 + 20
-    Set %AutoMineMenuRow3 %AutoMineMenuRow2 + 40
-    Set %AutoMineMenuRow4 %AutoMineMenuRow3 + 40
-    Set %AutoMineMenuRow5 %AutoMineMenuRow4 + 40
-    Set %AutoMineMenuRow6 %AutoMineMenuRow5 + 40
-    Set %AutoMineMenuRow7 %AutoMineMenuRow6 + 45
+    Set %OptionsMenu %Insanity + 55
 
-    Set %RunebookRow1 %AutoMineMenuRow1
-    Set %RunebookRow2 %RunebookRow1 + 20
-    Set %RunebookRow3 %RunebookRow2 + 25
-    Set %RunebookRow4 %RunebookRow3 + 25
-    Set %RunebookRow5 %RunebookRow4 + 25
-    Set %RunebookRow6 %RunebookRow5 + 25
-    Set %RunebookRow7 %RunebookRow6 + 25
-    Set %RunebookRow8 %RunebookRow7 + 25
-    Set %RunebookRow9 %RunebookRow8 + 25
-    Set %RunebookRow10 %RunebookRow9 + 25
-
-    Set %OptionsMenu  %AutoMineMenuRow7 + 55
-
-    Set %QuitMenu %AutoMineMenuRow7 + 55
+    Set %QuitMenu %Insanity + 55
 
     ; Button Dimensons
     Set %2_ButtonX 165
@@ -481,11 +301,11 @@ Sub CreateMainMenu
     Set %ButtonY_Large 40
 
     Menu Clear
-    Menu Window Size 360 516
+    Menu Window Size 360 235
     Menu Window Title [YO] Mining Suite v1.4
 
     ; Top Row
-    Menu Text ProspectorTools 10 %TopRow Prospector Tools: %MiningToolCount
+    Menu Text ProspectorTools 10 %TopRow Prospector Tools: %ProspectorToolCount
     Menu Text MiningTools 150 %TopRow Mining Tools: %MiningToolCount
     Menu Text Coords 290 %TopRow
 
@@ -502,70 +322,24 @@ Sub CreateMainMenu
     Menu Button Smelt %4_Col1 %MiningMenuRow3 %4_ButtonX %ButtonY Smelt
     Menu Button Consolidate %4_Col2 %MiningMenuRow3 %4_ButtonX %ButtonY Consolidate
     Menu Button DumpOre %4_Col3 %MiningMenuRow3 %4_ButtonX %ButtonY Dump
-    Menu Button RareOre %4_Col4 %MiningMenuRow3 %4_ButtonX %ButtonY P/U Rare
 
-    ; Pack Animal Menu
-    Menu Text AnimalMenu %MenuCol %PackAnimalMenuRow1 Pack Animal Menu
-    Menu Button LoadHorse %4_Col1 %PackAnimalMenuRow2 %4_ButtonX %ButtonY Load Horse
-    Menu Button Come %4_Col2 %PackAnimalMenuRow2 %4_ButtonX %ButtonY Come
-    Menu Button Follow %4_Col3 %PackAnimalMenuRow2 %4_ButtonX %ButtonY Follow
-    Menu Button Stay %4_Col4 %PackAnimalMenuRow2 %4_ButtonX %ButtonY Stay
-
-    ; Auto-Mine Menu
-    Menu Text AutoMineMenu %MenuCol %AutoMineMenuRow1 Auto-Mine Menu
-    Menu Button MineMinoc %3_Col1 %AutoMineMenuRow2 %AM_ButtonX %ButtonY_Large Minoc East Cave
-    Menu Button RecallMinoc %AMR_Col %AutoMineMenuRow2 %AMR_ButtonX %ButtonY_Large Recall
-
-    Menu Button MineAvarice1 %3_Col1 %AutoMineMenuRow3 %AM_ButtonX %ButtonY_Large Avarice Cave 1
-    Menu Button RecallAvarice1 %AMR_Col %AutoMineMenuRow3 %AMR_ButtonX %ButtonY_Large Recall
-
-    Menu Button MineAvarice2 %3_Col1 %AutoMineMenuRow4 %AM_ButtonX %ButtonY_Large Avarice Cave 2
-    Menu Button RecallAvarice2 %AMR_Col %AutoMineMenuRow4 %AMR_ButtonX %ButtonY_Large Recall
-
-    Menu Button MineAvarice3 %3_Col1 %AutoMineMenuRow5 %AM_ButtonX %ButtonY_Large Avarice Cave 3
-    Menu Button RecallAvarice3 %AMR_Col %AutoMineMenuRow5 %AMR_ButtonX %ButtonY_Large Recall
-
-    Menu Button MineAvarice4 %3_Col1 %AutoMineMenuRow6 %AM_ButtonX %ButtonY_Large Avarice Cave 4
-    Menu Button RecallAvarice4 %AMR_Col %AutoMineMenuRow6 %AMR_ButtonX %ButtonY_Large Recall
-
-    ; Runebook Menu
-    Menu Text RunebookMenu 290 %RunebookRow1 Runebook
-    Menu Button RB1 %RB_Col1 %RunebookRow2 %RB_ButtonX %ButtonY 1
-    Menu Button RB2 %RB_Col1 %RunebookRow3 %RB_ButtonX %ButtonY 2
-    Menu Button RB3 %RB_Col1 %RunebookRow4 %RB_ButtonX %ButtonY 3
-    Menu Button RB4 %RB_Col1 %RunebookRow5 %RB_ButtonX %ButtonY 4
-    Menu Button RB5 %RB_Col1 %RunebookRow6 %RB_ButtonX %ButtonY 5
-    Menu Button RB6 %RB_Col1 %RunebookRow7 %RB_ButtonX %ButtonY 6
-    Menu Button RB7 %RB_Col1 %RunebookRow8 %RB_ButtonX %ButtonY 7
-    Menu Button RB8 %RB_Col1 %RunebookRow9 %RB_ButtonX %ButtonY 8
-    Menu Button RB9 %RB_Col2 %RunebookRow2 %RB_ButtonX %ButtonY 9
-    Menu Button RB10 %RB_Col2 %RunebookRow3 %RB_ButtonX %ButtonY 10
-    Menu Button RB11 %RB_Col2 %RunebookRow4 %RB_ButtonX %ButtonY 11
-    Menu Button RB12 %RB_Col2 %RunebookRow5 %RB_ButtonX %ButtonY 12
-    Menu Button RB13 %RB_Col2 %RunebookRow6 %RB_ButtonX %ButtonY 13
-    Menu Button RB14 %RB_Col2 %RunebookRow7 %RB_ButtonX %ButtonY 14
-    Menu Button RB15 %RB_Col2 %RunebookRow8 %RB_ButtonX %ButtonY 15
-    Menu Button RB16 %RB_Col2 %RunebookRow9 %RB_ButtonX %ButtonY 16
-
-    Menu Font BGColor Red
     Menu Button Quit %3_Col3 %QuitMenu %3_ButtonX 36 Quit
 
     Menu Font BGColor White
     Menu List Create Options %OptionsCol %OptionsMenu 150 36
-    Menu List Add Options Enable Pack Horse
     Menu List Add Options Enable Portable Forge
-    Menu List Select Options 2
+    Menu List Select Options 1
 
     Menu Font BGColor Black
     Menu Font Color White
-    Menu Button Insanity %3_Col1 %AutoMineMenuRow7 340 50 THIS IS INSANITY!!!
+    Menu Button Insanity %3_Col1 %Insanity 340 50 THIS IS INSANITY!!!
 
     Menu Show
     Return
 
 Sub ToolCheck ; Mining tool interrupt
     FindItem %MiningTool C ; Find Mining Tool in any Open Containers
-    Wait 5
+    Wait %ShortDelay
     Set %MiningToolCount #FindCnt
     Set %MiningToolID #FindID
     If #FindCnt = 0
@@ -575,21 +349,22 @@ Sub ToolCheck ; Mining tool interrupt
         Goto Mainloop
     }
     Menu Set MiningTools Mining Tools: %MiningToolCount
-    If %UseProspector = #True
+
+    FindItem %ProspectorTool C
+    If #FindCnt = 0
     {
-        FindItem %ProspectorTool C
-        If #FindCnt = 0
-            Set %ProspectorToolCount 0
-        Else
-        {
-            Set %ProspectorToolCount #FindCnt
-            Set %ProspectorToolID #FindID
-        }
+        Set %UseProspector #False
+        Set %ProspectorToolCount 0
+    Else
+    {
+        Set %UseProspector #True
+        Set %ProspectorToolCount #FindCnt
+        Set %ProspectorToolID #FindID
     }
     Menu Set ProspectorTools Prospector Tools: %ProspectorToolCount
     Return
 
-Sub MineMinoc
+Sub MineMinocEast
     GoSub Pathfind 2560 496 ; Starting Position / Node 1
     GoSub MineCircle
     GoSub Pathfind 2560 488 ; Node 2
@@ -673,6 +448,93 @@ Sub MineAvarice4
     GoSub MineCircle
     GoSub Pathfind 2368 824 ; Node 5
     GoSub MineCircle
+
+    GoSub MoveIngots #BackpackID %ToolBag
+    GoSub OrganizeIngots %ToolBag
+    Return
+    
+Sub MineDestard1
+    GoSub Pathfind 1256 2648 ; Starting Position / Node 1
+    GoSub MineCircle
+    GoSub Pathfind 1256 2656 ; Node 2
+    GoSub MineCircle
+    GoSub Pathfind 1248 2656 ; Node 3
+    GoSub MineCircle
+    GoSub Pathfind 1248 2648 ; Node 4
+    GoSub MineCircle
+
+    GoSub MoveIngots #BackpackID %ToolBag
+    GoSub OrganizeIngots %ToolBag
+    Return
+    
+Sub MineDestard2
+    GoSub Pathfind 1368 2728 ; Starting Position / Node 1
+    GoSub MineCircle
+    GoSub Pathfind 1368 2720 ; Node 2
+    GoSub MineCircle
+    GoSub Pathfind 1368 2711 ; Node 3
+    GoSub MineCircle
+    GoSub Pathfind 1376 2711 ; Node 4
+    GoSub MineCircle
+    GoSub Pathfind 1384 2708 ; Node 5
+    GoSub MineCircle
+
+    GoSub MoveIngots #BackpackID %ToolBag
+    GoSub OrganizeIngots %ToolBag
+    Return
+    
+Sub MineDestard3
+    GoSub Pathfind 1424 2888 ; Starting Position / Node 1
+    GoSub MineCircle
+    GoSub Pathfind 1424 2880 ; Node 2
+    GoSub MineCircle
+
+    GoSub MoveIngots #BackpackID %ToolBag
+    GoSub OrganizeIngots %ToolBag
+    Return
+    
+Sub MineDestard4
+    GoSub Pathfind 1496 2832 ; Starting Position / Node 1
+    GoSub MineCircle
+    GoSub Pathfind 1488 2824 ; Node 2
+    GoSub MineCircle
+
+    GoSub Pathfind 1496 2832 ; Travel to Node 1
+
+    GoSub Pathfind 1488 2837 ; Node 3
+    GoSub MineCircle
+    GoSub Pathfind 1480 2840 ; Node 4
+    GoSub MineCircle
+
+    GoSub PathFind 1488 2837 ; Travel to Node 3
+    
+    GoSub Pathfind 1496 2840 ; Node 5
+    GoSub MineCircle
+    GoSub Pathfind 1488 2850 ; Node 6
+    GoSub MineCircle
+
+    GoSub MoveIngots #BackpackID %ToolBag
+    GoSub OrganizeIngots %ToolBag
+    Return
+    
+Sub MineWrong1
+    GoSub Pathfind 1984 264 ; Starting Position / Node 1
+    GoSub MineCircle
+    GoSub Pathfind 1976 264 ; Node 2
+    GoSub MineCircle
+    GoSub Pathfind 1976 271 ; Node 3
+    GoSub MineCircle
+    GoSub Pathfind 1968 272 ; Node 4
+    GoSub MineCircle
+
+    GoSub MoveIngots #BackpackID %ToolBag
+    GoSub OrganizeIngots %ToolBag
+    Return
+    
+Sub MineWrong2
+    GoSub Pathfind 1936 320 ; Starting Position / Node 1
+    GoSub MineCircle
+
     GoSub MoveIngots #BackpackID %ToolBag
     GoSub OrganizeIngots %ToolBag
     Return
@@ -680,7 +542,9 @@ Sub MineAvarice4
 Sub MineCircle ; Mine Every Surrounding Tile
     GoSub ToolCheck
     Menu Font BGColor Red
-    Menu Button Stop 270 5 45 30 Stop
+    Menu Font Size 12
+    Menu Font Style b
+    Menu Button Stop 310 10 45 30 Stop
     For %y -1 1 ; y-axis
     {
         If %y = -1
@@ -746,31 +610,13 @@ Sub WeightCheck ; Check if Maximum Weight
 
 Sub DumpPack ; Dump All Ore From Open Packs
     Menu Set Status2 Dumping Ore From Backpack
-    If %UsePackHorse = #True
-        Event Macro 1 0 All Come
     FindItem %Ore C
     Wait %ShortDelay
     For #FindIndex 1 #FindCnt
     {
         ExEvent Drag #FindID #FindStack
         Wait %MedDelay
-        ExEvent DropG #CharPosX #CharPosY #CharPosZ
-        Wait %MedDelay
-    }
-    Return
-
-Sub DumpHorse
-    Menu Set Status2 Dumping Ore From Pack Horse
-    Set #LObjectID %PackHorse
-    Event Macro 17 0
-    Wait %MedDelay
-    FindItem %Ore C_ , %PackHorse
-    Wait %ShortDelay
-    For #FindIndex 1 #FindCnt
-    {
-        ExEvent Drag #FindID #FindStack
-        Wait %MedDelay
-        ExEvent DropG #CharPosX #CharPosY #CharPosZ
+        ExEvent DropG #CharPosX #CharPosY #CharPosY
         Wait %MedDelay
     }
     Return
@@ -803,43 +649,8 @@ Sub ConsolidateOre ; Comsolidate Ore Stacks on Ground by Type
     }
     Return
 
-Sub LoadHorse ; Load Ore Stacks on Ground Into Pack Horse
-    Menu Set Status2 Loading Ore Onto Pack Horse
-    If %UsePackHorse = #True
-        Event Macro 1 0 All Come
-    FindItem %Ore G_2
-    Wait %ShortDelay
-    For #FindIndex 0 #FindCnt
-    {
-        ExEvent Drag #FindID #FindStack
-        Wait %MedDelay
-        ExEvent DropC %PackHorse
-        Wait %MedDelay
-    }
-    Return
-
-Sub PickupRareOre ; Load Ore Stacks on Ground Into Pack Horse
-    Menu Set Status2 Picking Up Rare Ore
-    FindItem %Ore G_2
-    Wait %ShortDelay
-    For #FindIndex 0 #FindCnt
-    {
-        If #FindCol = %BronzeCol 2418 || #FindCol = %GoldCol 2213 || #FindCol = %AgapiteCol 2425 || #FindCol = %VeriteCol 2207 || #FindCol = %ValoriteLabel
-        {
-            ExEvent Drag #FindID #FindStack
-            Wait %MedDelay
-            ExEvent DropC #BackpackID
-            Wait %MedDelay
-    }
-    Return
-
 Sub Smelt
     Set %Forge JBG ; Forge Object Type
-    If %UsePackHorse = #True
-    {
-        GoSub LoadHorse
-        Return
-    }
     If %UsePortForge = #True
         FindItem %Forge C
     Else
@@ -1005,48 +816,116 @@ Sub Pathfind
     Return
     
 Sub Recall
-    Set %RecallX 234
-
+    Set %Col_1 234
+    Set %Col_2 394
+    
+    Set %Row_1 170
+    Set %Row_2 185
+    Set %Row_3 200
+    Set %Row_4 215
+    Set %Row_5 230
+    Set %Row_6 245
+    Set %Row_7 260
+    Set %Row_8 275
+    
     If %1 = 1
     {
         Set %Location Yew , #spc , Library
-        Set %RecallY 170
+        Set %RecallX %Col_1
+        Set %RecallY %Row_1
     }
     If %1 = 2
     {
         Set %Location West , #spc , Brit , #spc , Bank
-        Set %RecallY 185
+        Set %RecallX %Col_1
+        Set %RecallY %Row_2
     }
     If %1 = 3
     {
         Set %Location Minoc , #spc , Bank
-        Set %RecallY 200
+        Set %RecallX %Col_1
+        Set %RecallY %Row_3
     }
     If %1 = 4
     {
         Set %Location Minoc , #spc , East , #spc , Mine
-        Set %RecallY 215
+        Set %RecallX %Col_1
+        Set %RecallY %Row_4
     }
     If %1 = 5
     {
-        Set %Location Avarice , #spc , Cav , #spc , One
-        Set %RecallY 230
+        Set %Location Avarice , #spc , Cave , #spc , Three
+        Set %RecallX %Col_1
+        Set %RecallY %Row_5
     }
     If %1 = 6
     {
-        Set %Location Avarice , #spc , Cave , #spc , Two
-        Set %RecallY 245
+        Set %Location Avarice , #spc , Cave , #spc , Four
+        Set %RecallX %Col_1
+        Set %RecallY %Row_6
     }
     If %1 = 7
     {
-        Set %Location Avarice , #spc , Cave , #spc , Three
-        Set %RecallY 260
+        Set %Location Destard , #spc , Cave , #spc , One
+        Set %RecallX %Col_1
+        Set %RecallY %Row_7
     }
     If %1 = 8
     {
-        Set %Location Avarice , #spc , Cave , #spc , Four
-        Set %RecallY 275
+        Set %Location Destard , #spc , Cave , #spc , Two
+        Set %RecallX %Col_1
+        Set %RecallY %Row_8
     }
+    
+    If %1 = 9
+    {
+        Set %Location Destard , #spc , Cave , #spc , Three
+        Set %RecallX %Col_2
+        Set %RecallY %Row_1
+    }
+    If %1 = 10
+    {
+        Set %Location Destard , #spc , Cave , #spc , Four
+        Set %RecallX %Col_2
+        Set %RecallY %Row_2
+    }
+    If %1 = 11
+    {
+        Set %Location Wrong , #spc , Cave , #spc , One
+        Set %RecallX %Col_2
+        Set %RecallY %Row_3
+    }
+    If %1 = 12
+    {
+        Set %Location Wrong , #spc , Cave , #spc , Two
+        Set %RecallX %Col_2
+        Set %RecallY %Row_4
+    }
+    If %1 = 13
+    {
+        Set %Location
+        Set %RecallX %Col_2
+        Set %RecallY %Row_5
+    }
+    If %1 = 14
+    {
+        Set %Location
+        Set %RecallX %Col_2
+        Set %RecallY %Row_6
+    }
+    If %1 = 15
+    {
+        Set %Location
+        Set %RecallX %Col_2
+        Set %RecallY %Row_7
+    }
+    If %1 = 16
+    {
+        Set %Location
+        Set %RecallX %Col_2
+        Set %RecallY %Row_8
+    }
+    
     Menu Set Status2 Recalling to %Location
 
     Set %RuneBook MPF
@@ -1070,29 +949,65 @@ Sub Recall
     Return
     
 Sub Insanity
-    Menu Set Status1 Insanity Routine: Mining Minoc East Cave
+    Menu Set Status1 Insanity: Minoc East
     GoSub Recall 4
-    GoSub MineMinoc
+    GoSub MineMinocEast
 
-    Menu Set Status1 Insanity Routine: Mining Avarice Cave 1
-    GoSub Recall 5
-    GoSub MineAvarice1
+    ;Menu Set Status1 Insanity: Avarice 3
+    ;GoSub Recall 5
+    ;GoSub MineAvarice3
 
-    Menu Set Status1 Insanity Routine: Mining Avarice Cave 2
-    GoSub Recall 6
-    GoSub MineAvarice2
+    ;Menu Set Status1 Insanity: Avarice 4
+    ;GoSub Recall 6
+    ;GoSub MineAvarice4
 
-    Menu Set Status1 Insanity Routine: Mining Avarice Cave 3
+    Menu Set Status1 Insanity: Destard 1
     GoSub Recall 7
-    GoSub MineAvarice3
+    GoSub MineDestard1
 
-    Menu Set Status1 Insanity Routine: Mining Avarice Cave 4
+    Menu Set Status1 Insanity: Destard 2
     GoSub Recall 8
-    GoSub MineAvarice4
+    GoSub MineDestard2
 
-    Menu Set Status1 Insanity Routine: Post-Cleanup
+    Menu Set Status1 Insanity: Destard 3
+    GoSub Recall 9
+    GoSub MineDestard3
+
+    Menu Set Status1 Insanity: Destard 4
+    GoSub Recall 10
+    GoSub MineDestard4
+
+    Menu Set Status1 Insanity: Wrong 1
+    GoSub Recall 11
+    GoSub MineWrong1
+
+    Menu Set Status1 Insanity: Wrong 2
+    GoSub Recall 12
+    GoSub MineWrong2
+
+    Menu Set Status1 Insanity: Post-Cleanup
     GoSub Recall 3
     Wait 2s
+    Event Macro 1 0 Bank
+    Wait %ShortDelay
+    Set #LObjectID %BankIngotContainer
+    Event Macro 17 0
     Gosub MoveIngots %ToolBag %BankIngotContainer
     GoSub OrganizeIngots %BankIngotContainer
+
+    Menu Set Status1 Insanity: Restocking
+    GoSub RestockScrolls
     Return
+    
+Sub RestockSrolls
+    Set %RecallScrolls WTL
+
+    FindItem %RecallScrolls C_ , AUZXOMD
+    ExEvent Drag #FindID 10
+    Wait 10
+
+    FindItem %RuneBook C_ , %RuneBag
+    ExEvent DropC #FindID #FindX #FindY
+    Wait 10
+    Return
+

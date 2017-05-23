@@ -38,8 +38,8 @@ Sub Initialize
     Set %MedDelay 10 ; Half Second Delay
     Set %LongDelay 15 ; Three-Quarters Second Delay
 
-    Set %DrankDelay 20 ; Number of Seconds Between Drinking
-    Set %DrankNum 1 ; Number of Drinks Every %DrankDelay
+    Set %DrankDelay 30 ; Number of Seconds Between Drinking
+    Set %DrankNum 2 ; Number of Drinks Every %DrankDelay
     Set %DrankyDrank LTD ; Alcohol
 
     Event SysMessage Opening Containers...
@@ -101,7 +101,8 @@ Sub DrankCheck
     If #FindCnt = 0
     {
         Display Get thee to a liquor store! The alcohol is gone, the party is over :(
-        Set %AutoMedTrigger #False
+        Set #MenuButton Nothing
+        Halt
     }
     Set #LObjectID #FindID
     Return
