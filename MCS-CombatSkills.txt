@@ -1,0 +1,899 @@
+;==============================================================================
+; [YO] Combat Skills Suite, v0.1
+;==============================================================================
+InitEvents                    ; Initialize Macro Events
+
+;------------------------------------------------------------------------------
+; Menu Strings
+;------------------------------------------------------------------------------
+Set %menu_version_title       [YO] , #SPC , Weapon , #SPC , Skills , #SPC , Suite , #SPC , v0.1
+Set %menu_update_delay        20
+
+;------------------------------------------------------------------------------
+; Weapon type IDs
+;------------------------------------------------------------------------------
+Set %itid_archery_weapons     PPO_WOH_USF_LMH_QPO
+Set %itid_fencing_weapons     WSF_TSF_VRH_OPO_CUO_XRH_MTF_RRH
+Set %itid_sword_weapons       CNF_FUO_ATF_NPO_JPH_NMH_JTF_SOH_BPH_HSF_ZTO_BUO_XTH_GUO_GMH_HNF 
+Set %itid_axe_weapons         LSF_BSF_NSF_ZRF_RMH_LPH_UOH
+Set %itid_mace_weapons        VTH_YSF_BUH_AUO_TRH_ZTH
+
+;------------------------------------------------------------------------------
+; Sparring thresholds
+;------------------------------------------------------------------------------
+Set %thresh_disarm            75
+Set %thresh_rearm             90
+Set %thresh_heal              90
+
+;------------------------------------------------------------------------------
+; Action Delays
+;------------------------------------------------------------------------------
+Set %delay_heal_opponent      80
+Set %delay_heal_self          200
+Set %delay_disarm             20
+
+;------------------------------------------------------------------------------
+; Counters
+;------------------------------------------------------------------------------
+Set %count_bandaids_used      0
+Set %count_regs_used          0
+Set %count_start_time         #SCNT
+Set %count_current_time       #SCNT
+
+;==============================================================================
+; Set up environment, targets, and skill status menu
+;==============================================================================
+GoSub SetupSkillsHeals
+GoSub ShowInitMenu
+GoSub SetupGumps
+GoSub SetupWeapon
+GoSub SetupTargets
+GoSub ShowStatusMenu
+GoSub UpdateSkills            %config_combat_skill tactics healing magery lumberjacking
+GoSub UpdateStatusMenuSkills  start now                     ; Update current and baseline skill amts
+
+;==============================================================================
+; Main Event Loop
+;==============================================================================
+MainLoop:
+    GoSub HandleStatusMenuButtons                           ; Check for button presses
+    
+    GoSub GetParticipantStatus    combatants                ; Update participant stats
+    GoSub SortObjects             combatants HP #FALSE      ; Sort combatants by HP, descending
+    GoSub SortObjects             healees    HP #TRUE       ; Sort healees by HP, ascending
+    
+    Set   %count_current_time     #SCNT                     ; Update time for this tick
+    
+    GoSub UpdateSkills            %config_combat_skill tactics healing magery lumberjacking
+    GoSub UpdateStatusMenuSkills  now gain perhour          ; Update current skill amt, calc stats
+    
+    Goto MainLoop
+
+;==============================================================================
+; Assign skills from Menu selections
+;==============================================================================
+Sub SetupSkillsHeals
+    ; Show the Skill and Heal selection Menu
+    GoSub ShowSkillsHealsSelectionMenu
+    
+    ; Wait for user response
+    MENU_SKILL_HEAL_WAIT:
+        Wait 1
+        If #MENUBUTTON <> Start
+            Goto MENU_SKILL_HEAL_WAIT
+
+        Menu Get menu_select_combat_skill
+        Wait 1
+        If #MENURES = 0 
+            Set %config_combat_skill none           
+        If #MENURES = 1 
+            Set %config_combat_skill archery       
+        If #MENURES = 2 
+            Set %config_combat_skill fencing       
+        If #MENURES = 3 
+            Set %config_combat_skill swords        
+        If #MENURES = 4 
+            Set %config_combat_skill mace        
+        If #MENURES = 5 
+            Set %config_combat_skill wrestling     
+        If #MENURES = 6 
+            Set %config_combat_skill lumberjacking 
+        
+        Menu Get menu_select_heal_method
+        Wait 1
+        If #MENURES = 0 
+            Set %config_healing_method none          
+        If #MENURES = 1 
+            Set %config_healing_method bandaids      
+        If #MENURES = 2 
+            Set %config_healing_method magery     
+
+        Set #MENUBUTTON N/A
+    Return
+
+;==============================================================================
+; Setup gump targets for finding things
+;==============================================================================
+Sub SetupGumps
+    ; Set paperdoll container ID
+    GoSub UpdateInitMenuText      Finding Paperdoll ID...
+    GoSub GetContainerID          8 1 paperdoll_gump
+    Wait 10   
+    Set %config_paperdoll_id      #RESULT
+    
+    ; Set backpack container ID
+    GoSub UpdateInitMenuText      Finding Backpack ID...
+    GoSub GetContainerID          8 7 container_gump
+    Wait 10     
+    Set %config_backpack_id       #RESULT
+    
+    ; Set status bar container ID
+    GoSub UpdateInitMenuText      Finding Status Bar ID...
+    GoSub GetContainerID          8 2 status_gump
+    Wait 10   
+    Set %config_status_id         #RESULT
+    
+    Return
+    
+;==============================================================================
+; Setup various targets used for sparring
+;==============================================================================
+Sub SetupTargets
+    ; Set combat targets 
+    Set %config_combatants_count 0
+    If %config_combat_skill <> none
+    {
+        GoSub UpdateInitMenuText      Choose combatants (choose self last)...
+        GoSub GetParticipantIDs       combatants #FALSE
+        Set %config_combatants_count  #RESULT
+    }
+    
+    ; Set healing targets 
+    Set %config_healees_count 0
+    If %config_healing_method <> none
+    {
+        GoSub UpdateInitMenuText      Choose healing targets (choose self last)...
+        GoSub GetParticipantIDs       healees #TRUE
+        Set %config_healees_count     #RESULT
+    }
+    
+    Return
+    
+;==============================================================================
+; Open containers and gather/verify ID
+;==============================================================================
+Sub GetContainerID
+FIND_CONT_ID:
+    Event Macro %1 %2
+    Wait 10
+
+    If #CONTNAME = %3
+        Return #CONTID
+    
+    Goto FIND_CONT_ID
+        
+;==============================================================================
+; Create namespaces for participants 
+;
+; %1 - Name token for creating namespace
+; %2 - Include Self?
+;==============================================================================
+Sub GetParticipantIDs
+    Set #LTARGETID N/A
+    Set %i 0
+    Wait 10
+    While #LTARGETID <> #CHARID
+    {
+        Set %i %i + 1                  ; Pre-increment for one-based indicies
+        
+        ; Target participants
+        Set #TARGCURS 1
+    TARGLOOP:
+        If #TARGCURS = 1
+          goto TARGLOOP
+
+        ; Save Gump location          
+        Set %click_x #CURSORX
+        Set %click_y #CURSORY
+        
+        ; Exit here if including self is not desired
+        If #LTARGETID = #CHARID && %2 = #FALSE
+            break
+        
+        ; Create a dedicated namespace for this ID
+        Set %ns   ns_ , %1 
+        Set %nsid %ns , _ , %i
+        Namespace Local %nsid
+        Set !id           #LTARGETID           ; Set object ID
+        Event Property    #LTARGETID           ; Query object NAME
+        Set !name         #PROPERTY            ; Set object NAME
+        Set !statgump_x   %click_x             ; Save X coord of status gump
+        Set !statgump_y   %click_y             ; Save Y coord of status gump
+        Namespace Local STD
+        
+        ; Create a default order for this ID 
+        Namespace Local %ns
+        Set !order . %i %i 
+        Namespace Local std 
+        
+
+    }    
+    Return %i - 1                      ; Return a one-based count
+    
+;==============================================================================
+; Create namespaces for participants 
+;
+; %1 - Name token for namespace
+;
+;==============================================================================
+Sub GetParticipantStatus
+    Set %tmp     config_ , %1 , _count    ; Construct count varname
+    Set %cnt     % . %tmp                 ; Number of items to sort
+    Set %ns      ns_ , %1                 ; Construct namespace name
+    
+    ; Count over each participant in the namespace
+    for %i 1 %cnt
+    {
+        Set %nsid %ns , _ , %i
+        Namespace Local %nsid
+        
+        Wait 10
+        Click !statgump_x !statgump_y g dmc
+        Click !statgump_x !statgump_y p dmc
+        Wait 10
+        Event SysMessage !name , #SPC , #CONTHP
+    }
+    Return
+    
+;==============================================================================
+; Sort objects based on given attribute
+;
+; %1 - Collection type Token for choosing namespace
+; %2 - Property to sort by
+; %3 - Sort Descending(True)/Ascending(False)
+;
+; Assumptions:
+;
+; - Object count is in %config_<collection_type>_count
+; - Namespace ns_<collection_type> exists and contains !order[1..N] variables
+;   that describe the order for the object instances.
+; - Namespace ns_<collection_type>_[1..N] exist and contain the properties for
+;   each object instance.
+;
+;==============================================================================
+Sub SortObjects
+    #LPC 1000
+    Set %ns   ns_ , %1
+    Set %prop %2
+    
+    ;
+    ; for i = 1 to length(A)
+    ;     j = i
+    ;     while j > 0 and A[j-1] > A[j]
+    ;         swap A[j] and A[j-1]
+    ;         j = j - 1
+    ;     end while
+    ; end for
+    ;
+    Set %tmp     config_ , %1 , _count    ; Construct count varname
+    Set %cnt     % . %tmp                 ; Number of items to sort
+    Set %coeff   ( %3 * 2 ) + 1           ; Map TRUE/FALSE to +1/-1
+    for %i 2 %cnt
+    {
+        ; Set up order indicies
+        Set %j    %i
+        Set %jm1  %j - 1
+
+        ; Get the ID of the %j-th and %jm1th sorted
+        ; object, and read the property we
+        ; wish to sort by from each
+        Namespace Local %ns
+        Set %jid      !order . %j
+        Set %jm1id    !order . %jm1
+        
+        Set %nsjid    %ns , _ , %jid
+        Namespace Local %nsjid
+        Set %aj       ! . %prop
+
+        Set %nsjm1id  %ns , _ , %jm1id
+        Namespace Local %nsjm1id
+        Set %ajm1     ! . %prop
+
+        ; If the objects are out of order, swap
+        while ( %j >= 2 ) && ( ( %coeff * %ajm1 ) > ( %coeff * %aj ) )
+        {
+            ; Swap %j-1-th and %j-th orders
+            Namespace Local %ns
+            Set %tmp           !order . %j
+            Set !order . %j    !order . %jm1
+            Set !order . %jm1  %tmp
+
+            ; Decrement j , update jm1
+            Set %j    %j - 1
+            ; Test %j for loop exit
+            If %j < 2
+               break
+            ; Loop continues, set up test variables for
+            ; next iteration
+            Set %jm1  %j - 1
+            
+            ; update A[j] and A[j-1] test values
+            ; Get the ID of the %j-th and %jm1th sorted
+            ; object, and read the property we
+            ; wish to sort by from each
+            Namespace Local %ns
+            Set %jid      !order . %j
+            Set %jm1id    !order . %jm1
+            
+            Set %nsjid    %ns , _ , %jid
+            Namespace Local %nsjid
+            Set %aj       ! . %prop
+    
+            Set %nsjm1id  %ns , _ , %jm1id
+            Namespace Local %nsjm1id
+            Set %ajm1     ! . %prop
+        }
+    }
+    Namespace Local std
+    #LPC 10
+    Return
+
+;==============================================================================
+; Setup combat skill sparring weapon
+;==============================================================================
+Sub SetupWeapon
+    ; Check paperdoll and backpack for sparring weapon suitable for
+    ; training the desired skill
+    
+    ; Weed out combat skills that need no weapon
+    If %config_combat_skill = none
+    {
+        GoSub UpdateInitMenuText        No combat skill selected, skipping weapon setup...
+        Return
+    }
+    If %config_combat_skill = wrestling
+    {
+        GoSub UpdateInitMenuText        No weapon needed for , #SPC , %config_combat_skill 
+        Return
+    }
+    
+    ; Check paperdoll first for an armed weapon
+    CheckIfArmed:
+        If %config_combat_skill = archery
+            FindItem %itid_archery_weapons  C_ , %config_paperdoll_id
+        If %config_combat_skill = fencing
+            FindItem %itid_fencing_weapons  C_ , %config_paperdoll_id
+        If %config_combat_skill = swords
+            FindItem %itid_sword_weapons    C_ , %config_paperdoll_id
+        If %config_combat_skill = mace
+            FindItem %itid_mace_weapons     C_ , %config_paperdoll_id
+        If %config_combat_skill = lumberjacking
+            FindItem %itid_axe_weapons      C_ , %config_paperdoll_id
+
+        GoSub UpdateInitMenuText        Checking weapon...
+        Wait 10
+        If #FINDKIND <> -1
+        {
+            GoSub UpdateInitMenuText Weapon , #SPC , #FINDID , #SPC , is equipped and suitable for , #SPC , %config_combat_skill 
+            Set %config_use_weapon #FINDID
+            Return                          ; Weapon is found and equipped
+        }
+        
+        ; No suitable weapon on paperdoll, look in backpack
+        GoSub UpdateInitMenuText        Searching for suitable weapon...
+        If %config_combat_skill = archery
+            FindItem %itid_archery_weapons  C_ , %config_backpack_id
+        If %config_combat_skill = fencing
+            FindItem %itid_fencing_weapons  C_ , %config_backpack_id
+        If %config_combat_skill = swords
+            FindItem %itid_sword_weapons    C_ , %config_backpack_id
+        If %config_combat_skill = mace
+            FindItem %itid_mace_weapons     C_ , %config_backpack_id
+        If %config_combat_skill = lumberjacking
+            FindItem %itid_axe_weapons      C_ , %config_backpack_id
+        
+        Wait 10
+        If #FINDKIND <> -1
+        {
+            GoSub UpdateInitMenuText    Weapon found, equipping weapon...
+            If %config_combat_skill = lumberjacking
+            {
+                Set #LHANDID #FINDID
+                Event Macro 24 1            ; Arm/Disarm Left
+            }
+            Else
+            {
+                SET #RHANDID #FINDID
+                Event Macro 24 2            ; Arm/Disarm Right
+            }
+            Wait %delay_disarm
+            Goto CheckIfArmed
+        }
+        If #FINDKIND = -1
+        {
+            GoSub UpdateInitMenuText    No suitable weapon found for training , #SPC , %config_combat_skill , !
+            halt
+        }
+        Return
+
+;==============================================================================
+; Update skill values
+;
+; %[1..N] - skill names to update
+;
+; Skill values will be stored in 'ns_skills' namespace under a key equal to the
+; skill name provided.
+;==============================================================================
+Sub UpdateSkills
+    Namespace Local ns_skills
+    For %i 1 %0
+    {
+        Set %skill % . %i 
+        ChooseSkill %skill
+        Set ! . %skill #SKILL
+    } 
+    Namespace Local std
+    Return
+
+;==============================================================================
+; Show combat skill and healing method selection Menu
+;==============================================================================
+Sub ShowSkillsHealsSelectionMenu
+    Menu Clear
+    Menu HideEUO
+    
+    Menu Window Title %menu_version_title , #SPC , | Config
+    Menu Window Color Window
+    Menu Window Size 400 180
+    
+    Menu Font Name Fixedsys
+    Menu Font Size 9
+    Menu Font Color WindowText
+    Menu Font BGcolor Window
+    Menu Font Align Left
+    
+    Menu Text menu_select_combat_skill_label          50  30 Combat Skill:
+    Menu Combo Create menu_select_combat_skill        200 30 150
+    Menu Combo Add    menu_select_combat_skill        Archery
+    Menu Combo Add    menu_select_combat_skill        Fencing
+    Menu Combo Add    menu_select_combat_skill        Swordsmanship
+    Menu Combo Add    menu_select_combat_skill        Mace Fighting
+    Menu Combo Add    menu_select_combat_skill        Wrestling
+    Menu Combo Add    menu_select_combat_skill        Lumberjacking
+             
+    Menu Text menu_select_heal_method_label           50  60 Heal Method:
+    Menu Combo Create menu_select_heal_method         200 60 150
+    Menu Combo Add    menu_select_heal_method         Bandaids
+    Menu Combo Add    menu_select_heal_method         Magery
+
+    Menu Button Start 200 120 120 30 Start
+    Menu Show 500 500
+    
+    Set #MENUBUTTON N/A
+    Return
+    
+;==============================================================================
+; Show initialization status dialog
+;==============================================================================
+Sub ShowInitMenu
+    Menu Clear
+    Menu HideEUO
+    
+    Menu Window Title %menu_version_title , #SPC , | Init
+    Menu Window Color Window
+    Menu Window Size 600 50
+    
+    Menu Font Name Fixedsys
+    Menu Font Size 9
+    Menu Font Color WindowText
+    Menu Font BGcolor Window
+    Menu Font Align Left
+    
+    Menu Text menu_status_text                        50 15 Initializing...
+    Return
+
+;==============================================================================
+; Update status text inside init menu
+;==============================================================================
+Sub UpdateInitMenuText
+    Set %msg #SPC
+    For %i 1 %0
+    {
+      Set %mp  % . %i
+      Set %msg %msg , #SPC , %mp
+    }
+    Menu Set menu_status_text %msg
+    Wait %menu_update_delay 
+    Return 
+    
+;==============================================================================
+; Show sparring status Menu
+;==============================================================================
+Sub ShowStatusMenu
+    Set %menu_height 280 + 30 * %config_combatants_count
+    
+    Set #LPC 100
+    
+    Menu Clear
+    
+    Menu Window Title %menu_version_title , #SPC , | Status
+    Menu Window Color Window
+    Menu Window Size 600 %menu_height
+    
+    Menu Font Name Fixedsys
+    Menu Font Size 9
+    Menu Font Style
+    Menu Font Color WindowText
+
+    Menu Font Align Left
+    Menu Text menu_player_name_label                  200 20    Name:
+    Menu Text menu_player_name                        250 20    #CHARNAME
+    
+    Menu Font Align Center
+    Menu Text menu_column_skill_start_label           250 52    Start:
+    Menu Text menu_column_skill_gain_label            310 52    Gain:
+    Menu Text menu_column_skill_now_label             370 52    Now:
+    Menu Text menu_column_skill_perhour_label         425 52    /h
+    
+    Menu Font Align Right
+    Menu Text menu_ , %config_combat_skill , _label   250 72    %config_combat_skill :
+    Menu Text menu_ , %config_combat_skill , _start   290 72    0
+    Menu Text menu_ , %config_combat_skill , _gain    350 72    0
+    Menu Text menu_ , %config_combat_skill , _now     395 72    0
+    Menu Text menu_ , %config_combat_skill , _inhour  440 72    0
+
+    If %config_healing_method = bandaids      
+    {     
+        Menu Text menu_healing_label                  250 132   Healing:
+        Menu Text menu_healing_start                  290 132   0
+        Menu Text menu_healing_gain                   350 132   0
+        Menu Text menu_healing_now                    395 132   0
+        Menu Text menu_healing_inhour                 440 132   0
+                
+        Menu Text menu_bandaid_label                  250 172   Bandaids Used:
+        Menu Text menu_bandaid_used                   290 172   0
+        Menu Text menu_bandaid_inhour                 440 172   0
+    }         
+    If %config_healing_method = magery          
+    {       
+        Menu Text menu_magery_skill_label             250 132   Magery:
+        Menu Text menu_magery_start                   290 132   0
+        Menu Text menu_magery_gain                    350 132   0
+        Menu Text menu_magery_now                     395 132   0
+        Menu text menu_magery_inhour                  440 132   0
+    }       
+        
+    Menu Text menu_time_used_label                    250 192   Time Used:
+    Menu Text menu_time_used                          290 192   0
+        
+    Menu Text menu_tactics_skill_label                250 112   Tactics:
+    Menu Text menu_tactics_start                      290 112   0
+    Menu Text menu_tactics_gain                       350 112   0
+    Menu Text menu_tactics_now                        395 112   0
+    Menu Text menu_tactics_inhour                     440 112   0
+   
+    Menu Font Color WindowText
+    Menu Font BGColor Red
+    Menu Button menu_button_panic                     8 10  100 45 PANIC
+    
+    Menu Font Color WindowText
+    Menu Font BGColor Green
+    Menu Button menu_button_resume                    8 65  100 45 Resume
+    
+    Menu Font Color Silver
+    Menu Font BGColor Background
+    Menu Button menu_button_exit                      8 120 100 45 EXIT
+   
+    Menu Font Size 6
+   ;If %config_combat_skill = archery
+    If #TRUE
+    {
+        Menu Font Color WindowText
+        Menu Font BGColor Gray
+        Menu Button menu_button_arrows                8 175 100 45 Collect arrows/bolts 
+    }
+    
+    Menu Show 500 500
+    
+    Set #LPC 10
+    Return
+
+;==============================================================================
+; Update the skills displayed in the status menu
+;
+; %[1..N] - Skill column names to update
+;
+;==============================================================================
+Sub UpdateStatusMenuSkills
+    Set #LPC 100
+    ; List of skills to update (FIXME make this cleaner)
+    Set %skillcnt   5 
+    Set %skill1     %config_combat_skill
+    Set %skill2     tactics
+    Set %skill3     healing
+    Set %skill4     magery
+    Set %skill5     lumberjacking
+
+    ; Update the status menu columns
+    Namespace Local ns_skills
+    for %i 1 %0
+    {
+        Set %column % . %i
+
+        for %j 1 %skillcnt
+        {
+            ; Set up varnames
+            Set %skill              %skill . %j
+            Set %skillcol           %skill , _ , %column
+            Set %skillnow           %skill , _now
+            Set %skillstart         %skill , _start
+            Set %skillgain          %skill , _gain
+            Set %elapsed            %count_current_time - %count_start_time
+            Menu Set menu_time_used %elapsed              
+
+            ; For sampled columns, just assign namespace vars
+            if %column = start || %column = now
+               Set ! . %skillcol ! . %skill
+
+            ; Gain column is a delta, compute _now - _start
+            if %column = gain
+            {
+               Set ! . %skillcol ( ! . %skillnow - ! . %skillstart )
+            }
+
+            ; perhour column is an average
+            if %column = perhour
+            {
+              Set ! . %skillcol ( ! . %skillgain * 3600 / %elapsed )
+            }
+
+            ; Set the menu value if it exists
+            Menu Set menu_ . %skillcol ! . %skillcol
+        }
+    }
+    Namespace Local std
+    Set #LPC 10
+    Return
+    
+;==============================================================================
+; Handle status menu buttons
+;==============================================================================
+SUB HandleStatusMenuButtons
+    If #MENUBUTTON = menu_button_panic
+    {
+        panic:
+        If %config_combat_skill = lumberjacking
+        {
+            Event Macro 24 1
+        }
+        Else
+        {
+            Event Macro 24 2
+        }
+        Wait %delay_disarm
+       ;SET *903 yes
+        SET #MENUBUTTON = N/A
+    }
+    
+    If #MENUBUTTON = menu_button_exit
+    {
+        If %config_combat_skill = lumberjacking
+        {
+            Event Macro 24 1
+        }
+        Else
+        {
+            Event Macro 24 2
+        }
+        Wait %delay_disarm
+       ;MSG All Guard Me$ ; just to be sure that dude will not kill us :D
+        Menu Clear
+        Menu Hide
+        Halt
+    }
+    
+    If #MENUBUTTON = menu_button_arrows
+    {
+        Set #MENUBUTTON = N/A
+        paperdollLoop2:
+        Event Macro 9 1
+        Wait 20
+        Event Macro 8 1
+        Wait 10
+        Set #CONTPOSX 800
+        Wait 20
+        Set #CONTPOSY 0
+        Wait 20
+        
+        If #CONTNAME = paperdoll_gump
+        {
+            Set %config_paperdoll_id #CONTID
+            Goto OutFromPaperdollLoop2
+        }
+        Goto paperdollLoop2
+        OutFromPaperdollLoop2:
+        
+        
+        
+        Arrowloop:
+        FindItem RWF G_2
+        If #FINDKIND <> -1
+        {
+            EVENT DRAG #FINDID
+            Wait 20
+            If #FINDSTACK >= 2
+            {
+                MSG $
+                Wait 10
+                CLICK 940 220
+            }
+        }
+        Else
+        {
+            CLICK 940 220
+            Wait 5
+        }
+        Goto Arrowloop
+    }
+    Return
+    
+;==============================================================================
+; Heal a combatant
+;==============================================================================
+Sub HealCombatant
+    If #ENEMYHITS <= %thresh_heal
+    {
+    HealAgain:
+        If %config_healing_method = magery
+        {
+            If #MANA >= 11
+            {
+                Event Macro 15 28
+                SET #LTARGETID %SparringDudeId
+                TARGET
+                Event Macro 22 0
+            }
+            Else
+            {
+                SET *903 yes
+            }
+        }
+        If %config_healing_method = bandaid
+        {
+            FindItem ZLF C_ , %config_backpack_id
+            If #FINDKIND <> -1
+            {
+                SET #LOBJECTID #FINDID
+                SET #LTARGETID %SparringDudeID
+                Event Macro 17 0
+                TARGET
+                Event Macro 22 0
+                Wait %HealDudeDelay
+                SET %bandaidsUsed %bandaidsUsed + 1
+                If #ENEMYHITS <= %thresh_heal
+                    Goto HealAgain
+            }
+            If #FINDKIND = -1
+            {
+                Display OK You are out of bandaids!$
+                + Go get some more and press start when ready$
+                PAUSE
+            }
+        }
+    }
+    HealDudeWait:
+    Return
+
+;==============================================================================
+; Heal yoself
+;==============================================================================
+Sub HealSelf
+    If #HITS <= 50
+    {
+        If %config_healing_method = magery
+        {
+            If #MANA > 11
+            {
+                Event Macro 15 28
+                TARGET
+                Event Macro 23 0
+            }
+        }
+        
+        
+        If %config_healing_method = bandaid
+        {
+            FindItem ZLF C_ , %config_backpack_id
+            If #FINDKIND <> -1
+            {
+                SET #LOBJECTID #FINDID
+                Event Macro 17 0
+                TARGET
+                Event Macro 23 0
+                Wait %HealSelfDelay
+                SET %bandaidsUsed %bandaidsUsed + 1
+            }
+            
+            If #FINDKIND = -1
+            {
+                Display OK You are out of bandaids!$
+                + Go get some more and press start when ready$
+                PAUSE
+            }
+            
+        }
+    }
+    Return
+
+;==============================================================================
+; Attack a combatant
+;==============================================================================
+Sub AttackCombatant
+    FindItem %SparringDudeID
+    If #FINDKIND <> -1
+    {
+        Set #LTARGETID %SparringDudeID
+        MSG #smc All Follow Me$
+        Wait 10
+        MSG #smc All Guard Me$
+        Wait 10
+        Event Macro 27 0
+        Wait 10
+        MSG #smc All Follow Me$
+        Wait 10
+        MSG #smc All Guard Me$
+        Wait 10
+        MSG #smc All Guard Me$
+        Wait 10
+    }
+    Else
+    {
+        Display Ok Im sorry but, your Dude is dead$
+        + Hire new and press start when you are ready$
+        PAUSE
+    }
+    Return
+
+;==========================
+;*****  Disarms If needed   
+;==========================
+
+SUB DisarmWhenDudeIsLowHp
+
+If #ENEMYHITS <= %thresh_disarm
+{
+If *903 = no
+{
+If %config_combat_skill = lumberjacking
+{
+Event Macro 24 1
+}
+Else
+{
+Event Macro 24 2
+}
+Wait %delay_disarm
+set *903 yes
+}
+}
+
+If #ENEMYHITS >= %thresh_rearm
+{
+If *903 = yes
+{
+If %config_combat_skill = lumberjacking
+{
+Event Macro 24 1
+}
+Else
+{
+Event Macro 24 2
+}
+Wait %delay_disarm
+set *903 no
+}
+}
+
+Return
+
+
