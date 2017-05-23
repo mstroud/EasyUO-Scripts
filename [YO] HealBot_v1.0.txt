@@ -36,6 +36,11 @@ Sub Initialize
     Event Macro 8 2
     Wait %LongDelay
 
+    Menu Set Status2 Opening Backpack ...
+    Set #LObjectID #BackpackID
+    Event Macro 17 0
+    Wait %LongDelay
+
     Menu Set Status2 Opening Stock Container ...
     Set #LObjectID %StockContainer
     Event Macro 17 0
@@ -122,7 +127,7 @@ Sub Heal
     FindItem %Aides C_ , #BackpackID
     Set #LObjectID #FindID
     Menu Set Status2 Healing #CharName
-    Set %HealTimer ( #Time + 10 )
+    Set %HealTimer ( #Time + 20 )
     Set %HealTrigger #False
     Event Macro 17 0
     Wait %MedDelay
