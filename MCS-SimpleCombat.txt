@@ -5,37 +5,76 @@
 ; 5) ...
 ; 6) Profit
 ;
+Set %dumdum             #LTARGETID
+Set %literally_aids     #LOBJECTID
+Set %self_heal_thresh   70
+Set %dum_hit_thresh     85
+Set %dum_heal_thresh    40
+Set %dum_danger_hp      25
+Set %dum_stop_hp        %dum_heal_thresh
+Set %dum_stop_err       0
+
 BEGIN:
       Set %dumdum #LTARGETID
-      Event Macro 27 0 ; Attack last (should be partner)
-      While #ENEMYHITS > 20
+      Event Macro 27 0                    ; Attack last
+      While #ENEMYHITS > %dum_heal_thresh
       {
-            Wait 1s ; Wait for partner to feel the burn
+            Wait 1s
       }
-      Event Macro 24 2 ; Disarm
+      Set %dum_stop_hp           #ENEMYHITS
+      Set %dum_stop_err          0
+      Event Macro 24 2                    ; Disarm
       Wait 2s
-      Event Macro 6 0 ; Leave War
-      While #ENEMYHITS < 80  ; Wait for partner to get back on his feet
+      Event Macro 6 0                     ; Leave War
+      Wait 10
+      While #ENEMYHITS < %dum_hit_thresh
       {
+            Set #LOBJECTID %literally_aids
+            Set #LTARGETID %dumdum
             Wait 10
-            Event Macro 17 0 ; Last object (bandaids)
+            Event Macro 17 0              ; Last object (bandaids)
             Target
             Wait 10
-            Event Macro 22 0 ; target last
-            Wait 8s
+            Event Macro 22 0              ; target last
+            If #ENEMYHITS < %dum_stop_hp
+               Set %dum_stop_hp #ENEMYHITS
+            Wait 7s
       }
-      While #HITS < 70
+      While #HITS < %self_heal_thresh
       {
-            Set #LTARGETID #CHARID ; Heal yourself if you bleedin'
+            Set #LTARGETID #CHARID        ; Target self
             Wait 10
-            Event Macro 17 0 ; Last object (bandaids)
+            Event Macro 17 0              ; Last object (bandaids)
             Target
             Wait 10
-            Event Macro 22 0 ; target last (should be self)
+            Event Macro 22 0              ; target last
             Wait 15s
       }
-      Set #LTARGETID %dumdum ; Reset last target to your partner
       Wait 10
-      Event Macro 24 2 ; Rearm
+      Event Macro 24 2                                        ; Rearm
       Wait 2s
+      
+      Set %dum_stop_err ( %dum_heal_thresh -  %dum_stop_hp ) ; Compute error in threshold vs. actual
+      Set %dum_last_thresh %dum_heal_thresh                  ; Save last thresh
+      If %dum_heal_thresh > %dum_danger_hp {
+          ; As long as we're above the danger zone, try to find a 
+          ; lower threshold        
+          If ( %dum_heal_thresh - %dum_stop_err ) <= %dum_danger_hp
+          {
+              ; We overshot into the danger zone, walk it back
+              Set %dum_heal_thresh ( %dum_heal_thresh + %dum_stop_err / 4 )
+          }
+          Else
+          {
+              ; We're good, inch down the thresh a bit
+              If %dum_heal_thresh > %dum_danger_hp
+                  Set %dum_heal_thresh %dum_heal_thresh - 1
+          }
+      }
+      Else
+      {
+          ; Hard limit to the danger zone
+          Set %dum_heal_thresh  %dum_danger_hp
+      }      
+      Event SysMessage LASTTHRESH: , #SPC , %dum_last_thresh , #SPC , STOPHP: , #SPC , %dum_stop_hp , #SPC , ERR: , #SPC , %dum_stop_err , #SPC , NEXTTHRESH: , #SPC , %dum_heal_thresh
 Goto BEGIN
