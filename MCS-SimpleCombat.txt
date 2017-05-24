@@ -1,0 +1,41 @@
+; 1) Equip your combat weapon
+; 2) Use bandaids on partner
+; 3) Begin attacking partner
+; 4) Press play
+; 5) ...
+; 6) Profit
+;
+BEGIN:
+      Set %dumdum #LTARGETID
+      Event Macro 27 0 ; Attack last (should be partner)
+      While #ENEMYHITS > 20
+      {
+            Wait 1s ; Wait for partner to feel the burn
+      }
+      Event Macro 24 2 ; Disarm
+      Wait 2s
+      Event Macro 6 0 ; Leave War
+      While #ENEMYHITS < 80  ; Wait for partner to get back on his feet
+      {
+            Wait 10
+            Event Macro 17 0 ; Last object (bandaids)
+            Target
+            Wait 10
+            Event Macro 22 0 ; target last
+            Wait 8s
+      }
+      While #HITS < 70
+      {
+            Set #LTARGETID #CHARID ; Heal yourself if you bleedin'
+            Wait 10
+            Event Macro 17 0 ; Last object (bandaids)
+            Target
+            Wait 10
+            Event Macro 22 0 ; target last (should be self)
+            Wait 15s
+      }
+      Set #LTARGETID %dumdum ; Reset last target to your partner
+      Wait 10
+      Event Macro 24 2 ; Rearm
+      Wait 2s
+Goto BEGIN
