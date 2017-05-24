@@ -9,7 +9,7 @@ Set %dumdum             #LTARGETID
 Set %literally_aids     #LOBJECTID
 Set %self_heal_thresh   70
 Set %dum_hit_thresh     85
-Set %dum_heal_thresh    40
+Set %dum_heal_thresh    30
 Set %dum_danger_hp      25
 Set %dum_stop_hp        %dum_heal_thresh
 Set %dum_stop_err       0
