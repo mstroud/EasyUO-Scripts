@@ -1,0 +1,456 @@
+Set %BlackPearl KUF
+Set %BloodMoss JUF
+Set %Garlic KZF
+Set %Ginseng JZF
+Set %MandrakeRoot MZF
+Set %Nightshade WZF
+Set %SpiderSilk RZF
+Set %SulfurousAsh SZF
+Set %RegList KUF_JUF_KZF_JZF_MZF_WZF_RZF_SZF
+
+Set %RegBag RNZVRMD
+
+Set %ParLevel 75
+
+Set %ShortDelay 5
+Set %MedDelay 10
+Set %LongDelay 15
+
+GoSub CreateMainMenu
+GoSub OrganizeStock
+GoSub ScanPlayerStock
+
+Mainloop:
+    Menu Set Status Ready To Rock!!!
+    If #menuButton = ScanStock
+    {
+        GoSub OrganizeStock
+        GoSub ScanPlayerStock
+        Set #menuButton Nothing
+    }
+    If #menuButton = OrganizeStock
+    {
+        GoSub DumpRegs
+        GoSub OrganizeStock
+        Set #menuButton Nothing
+    }
+    If #menuButton = RestockRegs
+    {
+        GoSub RestockRegs
+        Set #menuButton Nothing
+    }
+    If #menuButton = Quit
+    {
+        menu Hide
+        Halt
+    }
+    Goto Mainloop
+
+Sub CreateMainMenu
+    Set %WindowWidth 445
+    Set %WindowHeight 195
+
+    ; Button Dimensons
+    Set %ButtonX 150
+    Set %ButtonY 40
+
+    ; Column / Row Coordinates
+    Set %Col_1 10
+    Set %Col_2 %Col_1 + %ButtonX + 100
+    Set %Col_3 %Col_2 + 140
+
+    Set %Col_Reg_1 %Col_2 + 5
+    Set %Col_Reg_2 %Col_3 + 5
+
+    Set %Row_1 10
+    Set %Row_2 %Row_1 + 45
+    Set %Row_3 %Row_2 + 45
+    Set %Row_4 %Row_3 + 45
+    Set %Row_Quit %Row_3 + 30
+
+    Set %Text_Row_1 %Row_1 + 20
+    Set %Text_Row_2 %Text_Row_1 + 15
+    Set %Text_Row_3 %Text_Row_2 + 15
+    Set %Text_Row_4 %Text_Row_3 + 15
+    Set %Text_Row_5 %Text_Row_4 + 15
+    Set %Text_Row_6 %Text_Row_5 + 15
+    Set %Text_Row_7 %Text_Row_6 + 15
+    Set %Text_Row_8 %Text_Row_7 + 15
+
+    ; Image Coordinates
+    Set %Line1_X %Col_2 + 45
+    Set %Line1_Y_1 5
+    Set %Line1_Y_2 %Text_Row_8 + 20
+
+    Set %Line2_X_1 %Col_2 - 95
+    Set %Line2_X_2 %WindowWidth - 5
+    Set %Line2_Y %Line1_Y_2
+    
+    Set %Status_X %Line2_X_1 + 5
+    Set %Status_Y %Line2_Y + 10
+
+    Menu Clear
+    Menu Window Size %WindowWidth %WindowHeight
+    Menu Image Create BG 0 0 %WindowWidth %WindowHeight
+    Menu Window Title [YO] Reg Restock Suite_v1.0
+
+    ; Text
+    Menu Font Style b u
+    Menu Font Size 12
+    Menu Font Align Right
+    Menu Text Stock_Title %Col_2 %Row_1 Stock
+    Menu Text RegBag_Title %Col_3 %Row_1 Reg Bag
+
+    Menu Font Size 8
+    Menu Font Align Right
+
+    Menu Text Stock_BlackPearl_Title %Col_2 %Text_Row_1 Black Pearl:
+    Menu Text Stock_BloodMoss_Title %Col_2 %Text_Row_2 Blood Moss:
+    Menu Text Stock_Garlic_Title %Col_2 %Text_Row_3 Garlic:
+    Menu Text Stock_Ginseng_Title %Col_2 %Text_Row_4 Ginseng:
+    Menu Text Stock_MandrakeRoot_Title %Col_2 %Text_Row_5 MandrakeRoot:
+    Menu Text Stock_Nightshade_Title %Col_2 %Text_Row_6 Nightshade:
+    Menu Text Stock_SpiderSilk_Title %Col_2 %Text_Row_7 Spider Silk:
+    Menu Text Stock_SulfurousAsh_Title %Col_2 %Text_Row_8 Sulfurous Ash:
+
+    Menu Text RegBag_BlackPearl_Title %Col_3 %Text_Row_1 Black Pearl:
+    Menu Text RegBag_BloodMoss_Title %Col_3 %Text_Row_2 Blood Moss:
+    Menu Text RegBag_Garlic_Title %Col_3 %Text_Row_3 Garlic:
+    Menu Text RegBag_Ginseng_Title %Col_3 %Text_Row_4 Ginseng:
+    Menu Text RegBag_MandrakeRoot_Title %Col_3 %Text_Row_5 MandrakeRoot:
+    Menu Text RegBag_Nightshade_Title %Col_3 %Text_Row_6 Nightshade:
+    Menu Text RegBag_SpiderSilk_Title %Col_3 %Text_Row_7 Spider Silk:
+    Menu Text RegBag_SulfurousAsh_Title %Col_3 %Text_Row_8 Sulfurous Ash:
+
+    Menu Font Align Left
+    Menu Text Stock_BlackPearl_Quantity %Col_Reg_1 %Text_Row_1 xxxxx
+    Menu Text Stock_BloodMoss_Quantity %Col_Reg_1 %Text_Row_2 xxxx
+    Menu Text Stock_Garlic_Quantity %Col_Reg_1 %Text_Row_3 xxxx
+    Menu Text Stock_Ginseng_Quantity %Col_Reg_1 %Text_Row_4 xxxx
+    Menu Text Stock_MandrakeRoot_Quantity %Col_Reg_1 %Text_Row_5 xxxx
+    Menu Text Stock_Nightshade_Quantity %Col_Reg_1 %Text_Row_6 xxxx
+    Menu Text Stock_SpiderSilk_Quantity %Col_Reg_1 %Text_Row_7 xxxx
+    Menu Text Stock_SulfurousAsh_Quantity %Col_Reg_1 %Text_Row_8 xxxx
+
+    Menu Text RegBag_BlackPearl_Quantity %Col_Reg_2 %Text_Row_1 xxxxx
+    Menu Text RegBag_BloodMoss_Quantity %Col_Reg_2 %Text_Row_2 xxxx
+    Menu Text RegBag_Garlic_Quantity %Col_Reg_2 %Text_Row_3 xxxx
+    Menu Text RegBag_Ginseng_Quantity %Col_Reg_2 %Text_Row_4 xxxx
+    Menu Text RegBag_MandrakeRoot_Quantity %Col_Reg_2 %Text_Row_5 xxxx
+    Menu Text RegBag_Nightshade_Quantity %Col_Reg_2 %Text_Row_6 xxxx
+    Menu Text RegBag_SpiderSilk_Quantity %Col_Reg_2 %Text_Row_7 xxxx
+    Menu Text RegBag_SulfurousAsh_Quantity %Col_Reg_2 %Text_Row_8 xxxx
+
+    Menu Font Style b i
+    Menu Font Size 12
+    Menu Font Color Red
+    Menu Text Status %Status_X %Status_Y
+
+    Menu Font BGColor White
+    Menu Font Style b i
+    Menu Font Size 14
+    Menu Font Color Black
+
+    ; Buttons
+    Menu Button ScanStock %Col_1 %Row_1 %ButtonX %ButtonY Scan Stock
+    Menu Button OrganizeStock %Col_1 %Row_2 %ButtonX %ButtonY Organize Stock
+    Menu Button RestockRegs %Col_1 %Row_3 %ButtonX %ButtonY Restock Regs
+    Menu Button Quit %Col_1 %Row_4 %ButtonX %ButtonY Quit
+
+    ; Image
+    Menu Image Line BG %Line1_X %Line1_Y_1 %Line1_X %Line1_Y_2 Silver 2
+    Menu Image Line BG %Line2_X_1 %Line2_Y %Line2_X_2 %Line2_Y Silver 2
+
+    Menu Show
+    Return
+
+Sub ScanRegs
+    GoSub OrganizeStock
+    GoSub ScanPlayerStock
+    Return
+
+Sub DumpRegs
+    FindItem %RegList C_ , #BackpackID
+    While #FindCnt <> 0
+    {
+        ExEvent Drag #FindID #FindStack
+        Wait %MedDelay
+        ExEvent DropG #CharPosX #CharPosY
+        Wait %MedDelay
+        FindItem %RegList C_ , #BackpackID
+    }
+    Return
+
+Sub OrganizeStock
+    FindItem %BlackPearl G_3
+    Menu Set Status Checking Black Pearl ...
+    While #FindCnt <> 1
+    {
+        Menu Set Status Organizing Black Pearl ...
+        FindItem %BlackPearl G_3
+        Set %Stack1 #FindID
+        ExEvent Drag #FindID #FindStack
+        Wait %MedDelay
+        ExEvent DropG 4179 402
+        Wait %MedDelay
+
+        For #FindIndex 2 #FindCnt
+        {
+            ExEvent Drag #FindID #FindStack
+            Wait %MedDelay
+            ExEvent DropC %Stack1
+            Wait %MedDelay
+        }
+    }
+    FindItem %BlackPearl G_3
+    Menu Set Stock_BlackPearl_Quantity #FindStack
+
+    FindItem %BloodMoss G_3
+    Menu Set Status Checking Blood Moss ...
+    While #FindCnt <> 1
+    {
+        Menu Set Status Organizing Blood Moss ...
+        FindItem %BloodMoss G_3
+        Set %Stack1 #FindID
+        ExEvent Drag #FindID #FindStack
+        Wait %MedDelay
+        ExEvent DropG 4179 402
+        Wait %MedDelay
+
+        For #FindIndex 2 #FindCnt
+        {
+            ExEvent Drag #FindID #FindStack
+            Wait %MedDelay
+            ExEvent DropC %Stack1
+            Wait %MedDelay
+        }
+    }
+    FindItem %BloodMoss G_3
+    Menu Set Stock_BloodMoss_Quantity #FindStack
+
+    FindItem %Garlic G_3
+    Menu Set Status Checking Garlic ...
+    While #FindCnt <> 1
+    {
+        Menu Set Status Organizing Garlic ...
+        FindItem %Garlic G_3
+        Set %Stack1 #FindID
+        ExEvent Drag #FindID #FindStack
+        Wait %MedDelay
+        ExEvent DropG 4179 402
+        Wait %MedDelay
+
+        For #FindIndex 2 #FindCnt
+        {
+            ExEvent Drag #FindID #FindStack
+            Wait %MedDelay
+            ExEvent DropC %Stack1
+            Wait %MedDelay
+        }
+    }
+    FindItem %Garlic G_3
+    Menu Set Stock_Garlic_Quantity #FindStack
+
+    FindItem %Ginseng G_3
+    Menu Set Status Checking Ginseng ...
+    While #FindCnt <> 1
+    {
+        Menu Set Status Organizing Ginseng ...
+        FindItem %Ginseng G_3
+        Set %Stack1 #FindID
+        ExEvent Drag #FindID #FindStack
+        Wait %MedDelay
+        ExEvent DropG 4179 402
+        Wait %MedDelay
+
+        For #FindIndex 2 #FindCnt
+        {
+            ExEvent Drag #FindID #FindStack
+            Wait %MedDelay
+            ExEvent DropC %Stack1
+            Wait %MedDelay
+        }
+    }
+    FindItem %Ginseng G_3
+    Menu Set Stock_Ginseng_Quantity #FindStack
+
+    FindItem %MandrakeRoot G_3
+    Menu Set Status Checking Mandrake Root ...
+    While #FindCnt <> 1
+    {
+        Menu Set Status Organizing Mandrake Root ...
+        FindItem %MandrakeRoot G_3
+        Set %Stack1 #FindID
+        ExEvent Drag #FindID #FindStack
+        Wait %MedDelay
+        ExEvent DropG 4179 402
+        Wait %MedDelay
+
+        For #FindIndex 2 #FindCnt
+        {
+            ExEvent Drag #FindID #FindStack
+            Wait %MedDelay
+            ExEvent DropC %Stack1
+            Wait %MedDelay
+        }
+    }
+    FindItem %MandrakeRoot G_3
+    Menu Set Stock_MandrakeRoot_Quantity #FindStack
+    
+    FindItem %Nightshade G_3
+    Menu Set Status Checking Nightshade ...
+    While #FindCnt <> 1
+    {
+        Menu Set Status Organizing Nightshade ...
+        FindItem %Nightshade G_3
+        Set %Stack1 #FindID
+        ExEvent Drag #FindID #FindStack
+        Wait %MedDelay
+        ExEvent DropG 4179 402
+        Wait %MedDelay
+
+        For #FindIndex 2 #FindCnt
+        {
+            ExEvent Drag #FindID #FindStack
+            Wait %MedDelay
+            ExEvent DropC %Stack1
+            Wait %MedDelay
+        }
+    }
+    FindItem %Nightshade G_3
+    Menu Set Stock_Nightshade_Quantity #FindStack
+
+    FindItem %SpiderSilk G_3
+    Menu Set Status Checking Spider Silk ...
+    While #FindCnt <> 1
+    {
+        Menu Set Status Organizing Spider Silk ...
+        FindItem %SpiderSilk G_3
+        Set %Stack1 #FindID
+        ExEvent Drag #FindID #FindStack
+        Wait %MedDelay
+        ExEvent DropG 4179 402
+        Wait %MedDelay
+
+        For #FindIndex 2 #FindCnt
+        {
+            ExEvent Drag #FindID #FindStack
+            Wait %MedDelay
+            ExEvent DropC %Stack1
+            Wait %MedDelay
+        }
+    }
+    FindItem %SpiderSilk G_3
+    Menu Set Stock_SpiderSilk_Quantity #FindStack
+    
+    FindItem %SulfurousAsh G_3
+    Menu Set Status Checking Sulfurous Ash ...
+    While #FindCnt <> 1
+    {
+        Menu Set Status Organizing Sulfurous Ash ...
+        FindItem %SulfurousAsh G_3
+        Set %Stack1 #FindID
+        ExEvent Drag #FindID #FindStack
+        Wait %MedDelay
+        ExEvent DropG 4179 402
+        Wait %MedDelay
+
+        For #FindIndex 2 #FindCnt
+        {
+            ExEvent Drag #FindID #FindStack
+            Wait %MedDelay
+            ExEvent DropC %Stack1
+            Wait %MedDelay
+        }
+    }
+    FindItem %SulfurousAsh G_3
+    Menu Set Stock_SulfurousAsh_Quantity #FindStack
+    Return
+    
+Sub ScanPlayerStock
+    Set #LObjectID %RegBag
+    Event Macro 17 0
+    Wait %MedDelay
+    GoSub ScanRegBag %BlackPearl
+    GoSub ScanRegBag %BloodMoss
+    GoSub ScanRegBag %Garlic
+    GoSub ScanRegBag %Ginseng
+    GoSub ScanRegBag %MandrakeRoot
+    GoSub ScanRegBag %Nightshade
+    GoSub ScanRegBag %SpiderSilk
+    GoSub ScanRegBag %SulfurousAsh
+    Return
+
+Sub RestockRegs
+    Set #LObjectID %RegBag
+    Event Macro 17 0
+    Wait %LongDelay
+    GoSub Restock %BlackPearl
+    GoSub Restock %BloodMoss
+    GoSub Restock %Garlic
+    GoSub Restock %Ginseng
+    GoSub Restock %MandrakeRoot
+    GoSub Restock %Nightshade
+    GoSub Restock %SpiderSilk
+    GoSub Restock %SulfurousAsh
+    Return
+    
+Sub Restock
+    GoSub RestockQuantity %1
+    If %StockLevel > 0
+        GoSub StockRegBag %1 %StockLevel
+    Return
+
+Sub RestockQuantity
+    FindItem %1 C_ , %RegBag
+    If #FindStack >= %ParLevel
+        Set %StockLevel 0
+    Else
+        Set %StockLevel %ParLevel - #FindStack
+    Return
+
+Sub StockRegBag
+    FindItem %1 G_3
+    If %1 = %BlackPearl
+        Menu Set Status Restocking Black Pearl ...
+    If %1 = %BloodMoss
+        Menu Set Status Restocking Blood Moss ...
+    If %1 = %Garlic
+        Menu Set Status Restocking Garlic ...
+    If %1 = %Ginseng
+        Menu Set Status Restocking Ginseng ...
+    If %1 = %MandrakeRoot
+        Menu Set Status Restocking Mandrake Root ...
+    If %1 = %Nightshade
+        Menu Set Status Restocking Nightshade ...
+    If %1 = %SpiderSilk
+        Menu Set Status Restocking Spider Silk ...
+    If %1 = %SulfurousAsh
+        Menu Set Status Restocking Sulfurous Ash ...
+
+Sub ScanRegBag
+    FindItem %1 C_ , %RegBag
+    If %1 = %BlackPearl
+        Menu Set RegBag_BlackPearl_Quantity #FindStack
+    If %1 = %BloodMoss
+        Menu Set RegBag_BloodMoss_Quantity #FindStack
+    If %1 = %Garlic
+        Menu Set RegBag_Garlic_Quantity #FindStack
+    If %1 = %Ginseng
+        Menu Set RegBag_Ginseng_Quantity #FindStack
+    If %1 = %MandrakeRoot
+        Menu Set RegBag_MandrakeRoot_Quantity #FindStack
+    If %1 = %Nightshade
+        Menu Set RegBag_Nightshade_Quantity #FindStack
+    If %1 = %SpiderSilk
+        Menu Set RegBag_SpiderSilk_Quantity #FindStack
+    If %1 = %SulfurousAsh
+        Menu Set RegBag_SulfurousAsh_Quantity #FindStack
+    Return
+
+    ExEvent Drag #FindID %2
+    Wait %MedDelay
+    ExEvent DropC %RegBag
+
+    GoSub ScanRegBag %1
+    Return
